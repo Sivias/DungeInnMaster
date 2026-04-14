@@ -399,12 +399,19 @@ function updateVentureBtn() {
 }
 
 /* ── Keep re-roll button label and disabled state in sync ── */
+function _partyRefundTotal() {
+  return partyIds.reduce((sum, id) => {
+    const app = applicants.find(a => a.id === id);
+    return sum + (app ? _hireCost(app) : 0);
+  }, 0);
+}
 function _updateRerollBtn() {
   const btn = document.getElementById('reroll-btn');
   if (!btn) return;
   const cost = _rerollCost();
+  const affordableGold = state.gold + _partyRefundTotal();
   btn.textContent = `🎲 Re-roll (${cost}g)`;
-  btn.disabled = state.gold < cost;
+  btn.disabled = affordableGold < cost;
 }
 
 /* ── Get assembled party ── */

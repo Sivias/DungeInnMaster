@@ -40,10 +40,8 @@ function setGold(n) {
     const el = document.getElementById(id);
     if (el) el.textContent = n;
   });
-  // Keep dungeon affordability UI in sync (re-roll button + card states)
+  // Keep lightweight dungeon affordability UI in sync without forcing a full grid re-render.
   if (document.getElementById('reroll-btn')) _updateRerollBtn();
-  const dp = document.getElementById('dungeon-page');
-  if (dp && !dp.classList.contains('hidden')) renderApplicantGrid();
 }
 
 /* ── Append to all visible event logs (general/global events) ── */
