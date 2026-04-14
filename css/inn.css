@@ -1,0 +1,160 @@
+/* ═══════════════════════════════════════
+   INN.CSS — Inn room & upgrade UI
+═══════════════════════════════════════ */
+
+#inn-page { max-width: 628px; }
+
+/* ── Room ── */
+.room {
+  position: relative;
+  width: 580px;
+  height: 440px;
+  background-color: #1e2a3a;
+  border: 8px solid #6b4f2a;
+  border-radius: 6px;
+  box-shadow: 0 0 40px rgba(0,0,0,0.7), inset 0 0 80px rgba(0,0,0,0.4);
+}
+.room::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg, transparent 0px, transparent 57px,
+    rgba(107,79,42,0.15) 57px, rgba(107,79,42,0.15) 60px
+  );
+  pointer-events: none;
+}
+.room::after {
+  content: '';
+  position: absolute;
+  bottom: -8px; left: 50%;
+  transform: translateX(-50%);
+  width: 70px; height: 8px;
+  background-color: #1a1a2e;
+}
+
+/* ── Location cards ── */
+.location {
+  position: absolute;
+  width: 110px; height: 110px;
+  background: rgba(16,22,38,0.85);
+  border: 2px dashed #3a4a5a;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.15s;
+  user-select: none;
+}
+.location:hover { transform: scale(1.06); border-color: #7a9ab0; }
+.location .loc-icon  { font-size: 2rem; line-height: 1; }
+.location .loc-name  { font-size: 0.68rem; color: #6a7a8a; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
+.location .loc-level { font-size: 0.62rem; color: #4a6070; }
+
+.location.lv1,.location.lv2 { background: rgba(50,35,15,0.85); border: 2px solid #8b6534; }
+.location.lv1 .loc-name,.location.lv2 .loc-name { color: #c09060; }
+.location.lv3,.location.lv4 { background: rgba(15,30,50,0.9); border: 2px solid #3a7ab0; box-shadow: 0 0 10px rgba(58,122,176,0.2); }
+.location.lv3 .loc-name,.location.lv4 .loc-name { color: #6ab0e0; }
+.location.lv5 { background: rgba(40,30,10,0.9); border: 2px solid #c9a84c; box-shadow: 0 0 16px rgba(201,168,76,0.4); }
+.location.lv5 .loc-name { color: #e0c88a; }
+.location.selected { outline: 2px solid #e94560; outline-offset: 3px; }
+
+/* ── Positions ── */
+.left-1  { left: 16px;  top: 40px;  }
+.left-2  { left: 16px;  top: 165px; }
+.left-3  { left: 16px;  top: 290px; }
+.right-1 { right: 16px; top: 40px;  }
+.right-2 { right: 16px; top: 165px; }
+.right-3 { right: 16px; top: 290px; }
+
+/* ── Dungeon entrance button ── */
+.dungeon-btn {
+  position: absolute;
+  top: 12px; left: 50%;
+  transform: translateX(-50%);
+  width: 160px; height: 75px;
+  background: linear-gradient(160deg, #2a0808, #180404);
+  border: 2px solid #8b2020;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  user-select: none;
+  box-shadow: 0 0 14px rgba(139,32,32,0.35);
+}
+.dungeon-btn:hover { border-color: #e94560; box-shadow: 0 0 24px rgba(233,69,96,0.5); }
+.dungeon-btn .dng-icon { font-size: 1.5rem; }
+.dungeon-btn .dng-text { font-size: 0.62rem; color: #e08080; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; text-align: center; line-height: 1.4; }
+
+/* ── Info panel ── */
+.info-panel {
+  width: 580px;
+  min-height: 110px;
+  background: rgba(20,28,45,0.9);
+  border: 2px solid #2a3a4a;
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.info-content { flex: 1; }
+.info-title   { font-size: 1.1rem; color: #e0c88a; margin-bottom: 4px; }
+.info-desc    { font-size: 0.82rem; color: #8a9aaa; margin-bottom: 6px; }
+.info-stats   { font-size: 0.78rem; color: #6a8090; }
+.level-bar    { display: flex; gap: 4px; margin-top: 6px; }
+.level-pip    { width: 22px; height: 7px; border-radius: 3px; background: #2a3a4a; border: 1px solid #3a4a5a; }
+.level-pip.filled { background: #c9a84c; border-color: #e0c88a; }
+.welcome-msg  { color: #5a7080; font-style: italic; font-size: 0.92rem; text-align: center; width: 100%; }
+
+/* ── Upgrade button ── */
+.upgrade-btn {
+  padding: 12px 20px;
+  font-size: 0.88rem;
+  font-family: Georgia, serif;
+  font-weight: bold;
+  letter-spacing: 1px;
+  background: linear-gradient(135deg, #8b6534, #c9a84c);
+  color: #1a1000;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  text-align: center;
+  line-height: 1.5;
+  box-shadow: 0 4px 12px rgba(201,168,76,0.3);
+  transition: transform 0.1s, box-shadow 0.1s, opacity 0.2s;
+  min-width: 110px;
+}
+.upgrade-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(201,168,76,0.5); }
+.upgrade-btn:active:not(:disabled) { transform: translateY(1px); }
+.upgrade-btn:disabled { opacity: 0.38; cursor: not-allowed; }
+
+/* ── Door label ── */
+.door-label { font-size: 0.62rem; color: #3a4a5a; letter-spacing: 2px; text-transform: uppercase; margin-top: -10px; }
+
+/* ── Active expedition status pills ── */
+.inn-expedition-status {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  width: 580px; min-height: 0;
+}
+.inn-run-pill {
+  padding: 6px 16px; font-size: 0.72rem;
+  background: rgba(15,35,10,0.9);
+  border: 1px solid #3a6a2a; border-radius: 20px;
+  color: #80c060; cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  user-select: none;
+}
+.inn-run-pill:hover {
+  border-color: #4ac96a;
+  background: rgba(25,50,15,0.95);
+}

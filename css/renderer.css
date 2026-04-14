@@ -1,0 +1,45 @@
+/* ═══════════════════════════════════════
+   RENDERER.CSS — Dungeon canvas display
+═══════════════════════════════════════ */
+
+.dungeon-canvas-wrap {
+  width: 100%;
+  max-width: 640px;
+  line-height: 0;
+  border: 3px solid #6b4f2a;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 32px rgba(0,0,0,0.7);
+  background: #0d0b14;
+}
+
+#dungeon-canvas {
+  display: block;
+  width: 640px;
+  height: 288px;
+  max-width: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Compact encounter info row beside progress */
+.enc-info-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+.enc-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(22,10,10,0.88);
+  border: 1px solid #6b2020;
+  border-radius: 8px;
+  padding: 8px 14px;
+  flex: 1;
+}
+.enc-badge .enc-icon { font-size: 1.6rem; line-height: 1; }
+.enc-badge .enc-name { font-size: 0.85rem; color: #e08080; font-weight: bold; }
+.enc-badge .enc-diff { font-size: 0.65rem; color: #8a5050; letter-spacing: 1px; }
+

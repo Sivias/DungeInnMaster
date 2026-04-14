@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DungeInnMaster</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/inn.css" />
+  <link rel="stylesheet" href="css/dungeon.css" />
+  <link rel="stylesheet" href="css/adventure.css" />
+  <link rel="stylesheet" href="css/renderer.css" />
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════
+       INN PAGE — Top-down inn management
+  ══════════════════════════════════════ -->
+  <div id="inn-page" class="page">
+
+    <div class="header" style="width:580px">
+      <h1>⚔️ DungeInnMaster</h1>
+      <div class="gold-display">💰 <span id="gold-amount">50</span> Gold</div>
+    </div>
+
+    <div class="room">
+      <div class="dungeon-btn" id="dungeon-btn">
+        <span class="dng-icon">⚔️</span>
+        <span class="dng-text">Enter the<br>Dungeon</span>
+      </div>
+      <div class="location left-1"  data-id="bar">      <span class="loc-icon">🍺</span><span class="loc-name">Bar</span>       <span class="loc-level">Lv 0</span></div>
+      <div class="location left-2"  data-id="kitchen">  <span class="loc-icon">🍖</span><span class="loc-name">Kitchen</span>   <span class="loc-level">Lv 0</span></div>
+      <div class="location left-3"  data-id="cellar">   <span class="loc-icon">🪣</span><span class="loc-name">Cellar</span>    <span class="loc-level">Lv 0</span></div>
+      <div class="location right-1" data-id="hearth">   <span class="loc-icon">🔥</span><span class="loc-name">Hearth</span>    <span class="loc-level">Lv 0</span></div>
+      <div class="location right-2" data-id="guestroom"><span class="loc-icon">🛏️</span><span class="loc-name">Guest Room</span><span class="loc-level">Lv 0</span></div>
+      <div class="location right-3" data-id="stable">   <span class="loc-icon">🐴</span><span class="loc-name">Stable</span>    <span class="loc-level">Lv 0</span></div>
+    </div>
+
+    <div class="door-label">⬇ Entrance</div>
+
+    <!-- Active expedition pills -->
+    <div class="inn-expedition-status" id="inn-expedition-status"></div>
+
+    <div class="info-panel" id="info-panel" style="width:580px">
+      <p class="welcome-msg">Welcome, Inn Keeper! Select a location to manage it, or venture into the dungeon for gold.</p>
+    </div>
+
+    <div class="log-wrap" style="width:580px">
+      <button class="log-toggle" data-target="event-log">▾ expand log</button>
+      <div class="event-log" id="event-log">
+        <div class="log-entry">📜 Your inn awaits its first guests…</div>
+      </div>
+    </div>
+
+  </div><!-- /inn-page -->
+
+
+  <!-- ══════════════════════════════════════
+       DUNGEON PAGE — Expeditions & party selection
+  ══════════════════════════════════════ -->
+  <div id="dungeon-page" class="page hidden">
+
+    <div class="header">
+      <button class="back-btn" id="back-btn">← Return to Inn</button>
+      <h1 style="font-size:1.3rem">⚔️ Dungeon Gate</h1>
+      <div class="gold-display">💰 <span id="gold-amount-d">50</span> Gold</div>
+    </div>
+
+    <!-- Active expeditions -->
+    <div class="section-label">Active Expeditions</div>
+    <div class="active-runs-container" id="active-runs-container">
+      <p class="no-runs-msg">No active expeditions — deploy a party to begin!</p>
+    </div>
+
+    <div class="hearth-limit-msg" id="hearth-limit-msg"></div>
+
+    <!-- Deploy section (hidden at Hearth capacity) -->
+    <div id="deploy-section">
+      <div class="deploy-header">
+        <div class="section-label">Deploy Party (<span id="party-count">0</span>/4)</div>
+        <button class="clear-party-btn" id="clear-party-btn" onclick="clearParty()" title="Remove all adventurers from the party">✕ Clear Party</button>
+      </div>
+      <div class="party-slots" id="party-slots"></div>
+      <div class="party-status" id="party-status">Choose 4 adventurers from the list below.</div>
+
+      <div class="applicant-header">
+        <div class="section-label" id="applicant-label">Adventurers seeking work</div>
+        <div class="sort-bar" id="sort-bar">
+          <span class="sort-label">Sort:</span>
+          <button class="sort-btn active" data-sort="default">Default</button>
+          <button class="sort-btn" data-sort="rarity">✦ Rarity</button>
+          <button class="sort-btn" data-sort="class">Class</button>
+          <button class="sort-btn" data-sort="power">Power</button>
+        </div>
+      </div>
+      <div class="applicant-grid" id="applicant-grid"></div>
+
+      <button class="venture-btn" id="venture-btn" disabled>Select 4 Adventurers</button>
+    </div>
+
+    <div class="log-wrap">
+      <button class="log-toggle" data-target="event-log-d">▾ expand log</button>
+      <div class="event-log" id="event-log-d">
+        <div class="log-entry">📜 Who will brave the dungeon with you?</div>
+      </div>
+    </div>
+
+  </div><!-- /dungeon-page -->
+
+
+  <!-- ══════════════════════════════════════
+       ADVENTURE PAGE — Active dungeon run
+  ══════════════════════════════════════ -->
+  <div id="adventure-page" class="page hidden">
+
+    <div class="header">
+      <button class="back-btn" id="watch-inn-btn">🏠 Watch Inn</button>
+      <h1 style="font-size:1.3rem">🏰 The Dungeon</h1>
+      <div class="gold-display">💰 <span id="gold-amount-a">50</span> Gold</div>
+    </div>
+
+    <!-- Pixel-art dungeon canvas -->
+    <div class="dungeon-canvas-wrap">
+      <canvas id="dungeon-canvas" width="320" height="144"></canvas>
+    </div>
+
+    <!-- Floor progress bar -->
+    <div class="floor-progress">
+      <div class="floor-progress-track">
+        <div class="floor-progress-fill" id="floor-progress-fill" style="width:0%"></div>
+      </div>
+      <div class="floor-progress-info">
+        <span class="floor-label">Floor 1</span>
+        <span class="floor-time-left" id="floor-time-left">5:00</span>
+      </div>
+    </div>
+
+    <!-- Encounter info -->
+    <div class="enc-info-row">
+      <div class="enc-counter">⚔️ Slain: <span id="enc-count">0</span></div>
+      <div class="enc-badge">
+        <span class="enc-icon" id="enc-icon">🗺️</span>
+        <div class="enc-meta">
+          <div class="enc-name" id="enc-name">Advancing…</div>
+          <div class="enc-diff" id="enc-diff"></div>
+        </div>
+      </div>
+    </div>
+    <div class="enc-desc" id="enc-desc">Your party advances into the unknown…</div>
+
+    <!-- Party HP strip -->
+    <div class="section-label">Your Party</div>
+    <div class="adv-party" id="adv-party"></div>
+
+    <!-- Run totals + status -->
+    <div class="run-gold">⚔️ Gold earned this run: <span id="run-gold-earned">0</span></div>
+    <div class="adv-status" id="adv-status">Preparing to venture forth…</div>
+
+    <!-- Action buttons -->
+    <div class="action-row">
+      <button class="recall-btn" id="recall-btn">📯 Recall Party</button>
+    </div>
+
+    <div class="log-wrap">
+      <div class="log-wrap-bar">
+        <div class="log-filters">
+          <span class="log-filter-label">Filter:</span>
+          <button class="log-filter active" data-log="event-log-a" data-hide="hide-party">⚔️ Party</button>
+          <button class="log-filter active" data-log="event-log-a" data-hide="hide-enemy">👹 Enemies</button>
+          <button class="log-filter active" data-log="event-log-a" data-hide="hide-round">📋 Rounds</button>
+        </div>
+        <button class="log-toggle" data-target="event-log-a">▾ expand battle log</button>
+      </div>
+      <div class="event-log" id="event-log-a">
+        <div class="log-entry dungeon">🏰 Into the dungeon…</div>
+      </div>
+    </div>
+
+    <!-- Outcome overlay -->
+    <div class="outcome-overlay hidden" id="outcome-overlay">
+      <div class="outcome-box">
+        <div class="outcome-icon"  id="outcome-icon">🏆</div>
+        <div class="outcome-title" id="outcome-title">Victory!</div>
+        <div class="outcome-msg"   id="outcome-msg">Your party returns victorious!</div>
+        <button class="return-btn" id="return-btn">🏠 Return to Inn</button>
+      </div>
+    </div>
+
+  </div><!-- /adventure-page -->
+
+
+  <script src="js/data.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/inn.js"></script>
+  <script src="js/dungeon.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/adventure.js"></script>
+  <script src="js/main.js"></script>
+
+</body>
+</html>
+
+
+

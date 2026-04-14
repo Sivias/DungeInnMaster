@@ -1,0 +1,125 @@
+/* ═══════════════════════════════════════
+   BASE.CSS — Reset, layout, shared components
+═══════════════════════════════════════ */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #1a1a2e;
+  font-family: Georgia, serif;
+}
+
+.hidden { display: none !important; }
+
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 24px 16px;
+  gap: 18px;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.header h1 {
+  color: #e0c88a;
+  font-size: 1.6rem;
+  letter-spacing: 2px;
+  text-shadow: 0 0 18px rgba(224,200,138,0.4);
+}
+
+/* ── Gold display ── */
+.gold-display {
+  background: linear-gradient(135deg, #3a2e10, #5a4820);
+  border: 2px solid #c9a84c;
+  border-radius: 8px;
+  padding: 8px 18px;
+  color: #e0c88a;
+  font-size: 1.05rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  box-shadow: 0 0 12px rgba(201,168,76,0.25);
+}
+
+/* ── Event log wrapper ── */
+.log-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+/* ── Expand / collapse tab ── */
+.log-toggle {
+  font-size: 0.58rem;
+  font-family: Georgia, serif;
+  letter-spacing: 0.5px;
+  padding: 2px 12px;
+  background: rgba(14,18,30,0.85);
+  border: 1px solid #252f40;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  color: #4a6070;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  user-select: none;
+}
+.log-toggle:hover  { border-color: #c9a84c; color: #c9a84c; }
+.log-toggle.active { border-color: #c9a84c; color: #c9a84c; }
+
+/* ── Event log ── */
+.event-log {
+  width: 100%;
+  background: rgba(14,18,30,0.85);
+  border: 1px solid #252f40;
+  border-radius: 0 0 8px 8px;
+  padding: 10px 14px;
+  min-height: 64px;
+  max-height: 80px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.78rem;
+  transition: max-height 0.35s ease;
+}
+.event-log.expanded { max-height: 400px; border-radius: 8px; }
+.log-entry         { color: #6a8090; }
+.log-entry.gold    { color: #c9a84c; }
+.log-entry.upgrade { color: #6ab0e0; }
+.log-entry.dungeon { color: #e08080; }
+
+/* ── Rarity badges (shared) ── */
+.rarity-badge {
+  font-size: 0.52rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+.rarity-common    { color: #9a9aaa; background: rgba(154,154,170,0.1); border: 1px solid #4a4a5a; }
+.rarity-uncommon  { color: #4ac96a; background: rgba(74,201,106,0.1);  border: 1px solid #2a8a4a; }
+.rarity-rare      { color: #4a9ae9; background: rgba(74,154,233,0.1);  border: 1px solid #2a5ab0; }
+.rarity-epic      { color: #c04ae9; background: rgba(192,74,233,0.1);  border: 1px solid #803ab0; }
+.rarity-legendary { color: #e9c84a; background: rgba(233,200,74,0.12); border: 1px solid #b09030; }
+
+/* ── Section label ── */
+.section-label {
+  align-self: flex-start;
+  font-size: 0.72rem;
+  color: #5a7080;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
