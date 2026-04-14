@@ -65,8 +65,17 @@ document.querySelectorAll('.location').forEach(el =>
 function refreshInnExpeditionStatus() {
   const el = document.getElementById('inn-expedition-status');
   if (!el) return;
-  el.innerHTML = '';
-  if (!state.activeRuns || state.activeRuns.length === 0) return;
+
+  if (!state.activeRuns || state.activeRuns.length === 0) {
+    el.innerHTML = '';
+    return;
+  }
+
+  // Remove pills whose runs have ended — never touch pills that still exist
+  const liveIds = new Set(state.activeRuns.map(r => r.id));
+  el.querySelectorAll('.inn-run-pill').forEach(p => {
+    if (!liveIds.has(p.dataset.runId)) p.remove();
+  });
 
   state.activeRuns.forEach(run => {
     const alive = run.party.filter(m => m.status !== 'incapacitated').length;
@@ -75,12 +84,18 @@ function refreshInnExpeditionStatus() {
     const pIcon = phaseIcons[run.phase] ?? '🥾';
     const label = (run.party[0]?.name.split(' ')[0] ?? 'Party') + "'s party";
 
-    const pill = document.createElement('div');
-    pill.className = 'inn-run-pill';
-    pill.title = 'Click to watch this expedition';
+    // Reuse the existing pill element so click listeners are never destroyed
+    let pill = el.querySelector(`.inn-run-pill[data-run-id="${run.id}"]`);
+    if (!pill) {
+      pill = document.createElement('div');
+      pill.className = 'inn-run-pill';
+      pill.dataset.runId = run.id;
+      pill.title = 'Click to watch this expedition';
+      pill.addEventListener('click', () => watchRun(run.id));
+      el.appendChild(pill);
+    }
+    // Only update the text — the element itself stays in the DOM
     pill.innerHTML = `${pIcon} ${label} &nbsp;💛${alive} &nbsp;💰${run.goldEarned}g`;
-    pill.addEventListener('click', () => watchRun(run.id));
-    el.appendChild(pill);
   });
 }
 

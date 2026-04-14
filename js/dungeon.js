@@ -4,8 +4,15 @@
 
 let applicants = [];
 let partyIds   = [];
-let applicantSort = 'default';
-let _sortBarReady = false;
+let applicantSort     = 'default';
+let _sortBarReady     = false;
+let _applicantRosterLevel = -1;  // guest room level at last full generation
+
+/* ── Hire cost: rarity base + power × 2 ── */
+function _hireCost(app) {
+  const base = { common: 5, uncommon: 15, rare: 35, epic: 65, legendary: 110 };
+  return (base[app.rarity.id] ?? 5) + app.power * 2;
+}
 
 /* ── Rarity picker ── */
 function pickRarity(guestLv) {
@@ -59,12 +66,13 @@ function refreshDungeonPage() {
     if (deploySection) deploySection.style.display = '';
     if (limitMsg) limitMsg.textContent = '';
 
-    const guestLv = state.locs.guestroom.level;
-    const count   = 4 + guestLv * 2;
-    applicants    = Array.from({ length: count }, () => generateApplicant(guestLv));
-    partyIds      = [];
-    const lbl = document.getElementById('applicant-label');
-    if (lbl) lbl.textContent = `Adventurers seeking work — Guest Room Lv ${guestLv} (${count} available)`;
+    // Generate fresh roster on first visit; top up if Guest Room was upgraded
+    if (applicants.length === 0) {
+      _generateApplicants();
+    } else {
+      _topUpApplicants();
+    }
+
     renderPartySlots();
     renderApplicantGrid();
     updateVentureBtn();
@@ -73,6 +81,66 @@ function refreshDungeonPage() {
     if (limitMsg) limitMsg.textContent =
       `🔥 Hearth limit reached (${state.activeRuns.length}/${maxParties()} parties). Upgrade the Hearth to deploy more.`;
   }
+}
+
+/* ── Generate (or regenerate) the applicant pool ── */
+function _generateApplicants() {
+  const guestLv = state.locs.guestroom.level;
+  const count   = 4 + guestLv * 2;
+  applicants            = Array.from({ length: count }, () => generateApplicant(guestLv));
+  _applicantRosterLevel = guestLv;
+  _updateApplicantLabel();
+}
+
+/* ── Top up the roster when Guest Room has been upgraded since last generation ── */
+function _topUpApplicants() {
+  const guestLv = state.locs.guestroom.level;
+  if (guestLv <= _applicantRosterLevel) return;          // no change needed
+  const levelsGained = guestLv - _applicantRosterLevel;
+  const toAdd        = levelsGained * 2;                 // 2 extra slots per level
+  for (let i = 0; i < toAdd; i++) applicants.push(generateApplicant(guestLv));
+  _applicantRosterLevel = guestLv;
+  _updateApplicantLabel();
+}
+
+function _updateApplicantLabel() {
+  const lbl = document.getElementById('applicant-label');
+  if (!lbl) return;
+  const available = applicants.filter(a => !partyIds.includes(a.id)).length;
+  lbl.textContent = `Adventurers seeking work — Guest Room Lv ${_applicantRosterLevel} (${available} available)`;
+}
+
+/* ── Re-roll cost scales with Guest Room level ── */
+function _rerollCost() {
+  return 10 + state.locs.guestroom.level * 5;
+}
+
+/* ── Spend gold to refresh the adventurer roster ── */
+function rerollApplicants() {
+  const rollCost = _rerollCost();
+  // Hired party members will be refunded — account for that in the affordability check
+  const partyRefund = partyIds.reduce((s, id) => {
+    const app = applicants.find(a => a.id === id);
+    return s + (app ? _hireCost(app) : 0);
+  }, 0);
+  if (state.gold + partyRefund < rollCost) {
+    addLog(`❌ Not enough gold to re-roll! Need ${rollCost}g.`, 'dungeon');
+    return;
+  }
+  // Refund party, then charge re-roll fee in one step
+  setGold(state.gold + partyRefund - rollCost);
+  partyIds = [];
+  _generateApplicants();
+  renderPartySlots();
+  renderApplicantGrid();
+  updateVentureBtn();
+  addLog(`🎲 A new batch of adventurers arrives at the inn. (−${rollCost}g)`, 'gold');
+}
+
+/* ── Strip deployed members from pool after venturing ── */
+function postDeploy() {
+  applicants = applicants.filter(a => !partyIds.includes(a.id));
+  partyIds   = [];
 }
 
 /* ── Active expeditions panel ── */
@@ -125,6 +193,8 @@ function renderApplicantGrid() {
   if (!grid) return;
   grid.innerHTML = '';
 
+  _updateApplicantLabel();
+
   // Sort a shallow copy — never mutate the source array
   const sorted = [...applicants];
   if (applicantSort === 'rarity') {
@@ -136,9 +206,11 @@ function renderApplicantGrid() {
   }
 
   sorted.forEach(app => {
-    const inParty = partyIds.includes(app.id);
+    if (partyIds.includes(app.id)) return;   // already in party — hide from list
+    const cost       = _hireCost(app);
+    const affordable = state.gold >= cost;
     const card = document.createElement('div');
-    card.className = `applicant-card${inParty ? ' selected' : ''}`;
+    card.className = `applicant-card${affordable ? '' : ' unaffordable'}`;
     const pct = Math.round((app.power / 25) * 100);
     card.innerHTML = `
       <div class="app-icon">${app.cls.icon}</div>
@@ -150,7 +222,8 @@ function renderApplicantGrid() {
         <span class="power-label">PWR</span>
         <div class="power-bar-bg"><div class="power-bar-fill" style="width:${pct}%"></div></div>
         <span class="power-value">${app.power}</span>
-      </div>`;
+      </div>
+      <div class="app-cost${affordable ? '' : ' unaffordable'}">💰 ${cost}g</div>`;
     card.addEventListener('click', () => toggleMember(app.id));
     // Drag from grid
     card.draggable = true;
@@ -214,6 +287,11 @@ function renderPartySlots() {
 /* ── Clear entire party ── */
 function clearParty() {
   if (partyIds.length === 0) return;
+  const refund = partyIds.reduce((s, id) => {
+    const app = applicants.find(a => a.id === id);
+    return s + (app ? _hireCost(app) : 0);
+  }, 0);
+  if (refund > 0) setGold(state.gold + refund);
   partyIds = [];
   renderPartySlots();
   renderApplicantGrid();
@@ -222,8 +300,23 @@ function clearParty() {
 
 function toggleMember(id) {
   const idx = partyIds.indexOf(id);
-  if (idx !== -1) { partyIds.splice(idx, 1); }
-  else { if (partyIds.length >= 4) return; partyIds.push(id); }
+  if (idx !== -1) {
+    // Remove — refund hire cost
+    partyIds.splice(idx, 1);
+    const app = applicants.find(a => a.id === id);
+    if (app) setGold(state.gold + _hireCost(app));
+  } else {
+    if (partyIds.length >= 4) return;
+    const app = applicants.find(a => a.id === id);
+    if (!app) return;
+    const cost = _hireCost(app);
+    if (state.gold < cost) {
+      addLog(`❌ Not enough gold to hire ${app.name.split(' ')[0]}! (Need ${cost}g)`, 'dungeon');
+      return;
+    }
+    partyIds.push(id);
+    setGold(state.gold - cost);
+  }
   renderPartySlots();
   renderApplicantGrid();
   updateVentureBtn();
@@ -237,19 +330,37 @@ function _dropOnSlot(draggedId, slotIdx) {
   const fromSlot = partyIds.indexOf(draggedId);
 
   if (fromSlot !== -1 && currentId !== undefined) {
-    // Slot-to-slot with both filled: swap
+    // Slot-to-slot with both filled: swap — both already hired, no gold change
     partyIds[fromSlot] = currentId;
     partyIds[slotIdx]  = draggedId;
   } else if (fromSlot !== -1) {
-    // Slot-to-empty-slot: move, keep compact order
+    // Slot-to-empty-slot: reorder — no gold change
     partyIds.splice(fromSlot, 1);
     partyIds.splice(Math.min(slotIdx, partyIds.length), 0, draggedId);
   } else if (currentId !== undefined) {
-    // Grid-to-filled-slot: replace (old member leaves the party)
+    // Grid-to-filled-slot: swap member — refund old, charge new
+    const newApp = applicants.find(a => a.id === draggedId);
+    const oldApp = applicants.find(a => a.id === currentId);
+    if (!newApp) return;
+    const netCost = _hireCost(newApp) - (oldApp ? _hireCost(oldApp) : 0);
+    if (netCost > state.gold) {
+      addLog(`❌ Not enough gold to hire ${newApp.name.split(' ')[0]}! (Need ${_hireCost(newApp)}g)`, 'dungeon');
+      return;
+    }
+    if (netCost !== 0) setGold(state.gold - netCost);
     partyIds[slotIdx] = draggedId;
   } else {
-    // Grid-to-empty-slot: add if there's room
-    if (partyIds.length < 4) partyIds.push(draggedId);
+    // Grid-to-empty-slot: hire new member
+    if (partyIds.length >= 4) return;
+    const app = applicants.find(a => a.id === draggedId);
+    if (!app) return;
+    const cost = _hireCost(app);
+    if (state.gold < cost) {
+      addLog(`❌ Not enough gold to hire ${app.name.split(' ')[0]}! (Need ${cost}g)`, 'dungeon');
+      return;
+    }
+    setGold(state.gold - cost);
+    partyIds.push(draggedId);
   }
 
   renderPartySlots();
@@ -265,22 +376,42 @@ function updateVentureBtn() {
   if (state.activeRuns.length >= maxParties()) {
     btn.disabled = true;
     btn.textContent = `🔥 Hearth limit (${state.activeRuns.length}/${maxParties()})`;
+    _updateRerollBtn();
     return;
   }
 
-  const remaining = 4 - partyIds.length;
-  if (remaining === 0) {
+  const count = partyIds.length;
+  const ps    = document.getElementById('party-status');
+  if (count >= 1) {
     btn.disabled = false;
     const totalPower = partyIds.reduce((s, id) => s + (applicants.find(a => a.id === id)?.power ?? 0), 0);
-    btn.textContent = `⚔️ Venture Forth!  (Party Power: ${totalPower})`;
-    const ps = document.getElementById('party-status');
-    if (ps) ps.textContent = 'Your party is ready. Steel yourselves!';
+    const slots = count === 4 ? 'full party' : `${count} member${count > 1 ? 's' : ''}`;
+    btn.textContent = `⚔️ Venture Forth! (${slots} · Power: ${totalPower})`;
+    if (ps) ps.textContent = count < 4
+      ? `Ready! You may add up to ${4 - count} more member${4 - count > 1 ? 's' : ''}, or venture now.`
+      : 'Your party is ready. Steel yourselves!';
   } else {
     btn.disabled = true;
-    btn.textContent = `Select ${remaining} more adventurer${remaining === 1 ? '' : 's'}`;
-    const ps = document.getElementById('party-status');
-    if (ps) ps.textContent = 'Choose 4 adventurers from the list below.';
+    btn.textContent = 'Select 1–4 Adventurers';
+    if (ps) ps.textContent = 'Choose 1–4 adventurers from the list below.';
   }
+  _updateRerollBtn();
+}
+
+/* ── Keep re-roll button label and disabled state in sync ── */
+function _partyRefundTotal() {
+  return partyIds.reduce((sum, id) => {
+    const app = applicants.find(a => a.id === id);
+    return sum + (app ? _hireCost(app) : 0);
+  }, 0);
+}
+function _updateRerollBtn() {
+  const btn = document.getElementById('reroll-btn');
+  if (!btn) return;
+  const cost = _rerollCost();
+  const affordableGold = state.gold + _partyRefundTotal();
+  btn.textContent = `🎲 Re-roll (${cost}g)`;
+  btn.disabled = affordableGold < cost;
 }
 
 /* ── Get assembled party ── */

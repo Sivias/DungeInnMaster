@@ -50,6 +50,34 @@
   gap: 8px;
 }
 
+/* ── Controls group (sort bar + re-roll button) ── */
+.applicant-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── Re-roll button ── */
+.reroll-btn {
+  padding: 4px 12px;
+  font-size: 0.60rem;
+  font-family: Georgia, serif;
+  background: rgba(12, 30, 18, 0.85);
+  border: 1px solid #2a6a3a;
+  color: #5ac07a;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.reroll-btn:hover:not(:disabled) {
+  border-color: #4ac96a;
+  color: #90ffaa;
+  background: rgba(20, 55, 28, 0.95);
+}
+.reroll-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
 /* ── Sort bar ── */
 .sort-bar {
   display: flex;
@@ -181,6 +209,26 @@
 .power-bar-bg { flex: 1; height: 5px; background: #1a2a3a; border-radius: 3px; overflow: hidden; }
 .power-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #8b6534, #e0c88a); }
 .power-value  { font-size: 0.54rem; color: #8a9080; width: 18px; text-align: right; }
+
+/* ── Hire cost badge ── */
+.app-cost {
+  font-size: 0.58rem;
+  color: #4ac96a;
+  font-weight: bold;
+  margin-top: 3px;
+  letter-spacing: 0.3px;
+}
+.app-cost.unaffordable { color: #e94560; }
+
+/* ── Unaffordable card ── */
+.applicant-card.unaffordable {
+  opacity: 0.5;
+}
+.applicant-card.unaffordable:hover {
+  transform: none;
+  border-color: #2a3a4a;
+  cursor: not-allowed;
+}
 
 /* ── Party status text ── */
 .party-status {
