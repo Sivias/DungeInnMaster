@@ -50,6 +50,34 @@
   gap: 8px;
 }
 
+/* ── Controls group (sort bar + re-roll button) ── */
+.applicant-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ── Re-roll button ── */
+.reroll-btn {
+  padding: 4px 12px;
+  font-size: 0.60rem;
+  font-family: Georgia, serif;
+  background: rgba(12, 30, 18, 0.85);
+  border: 1px solid #2a6a3a;
+  color: #5ac07a;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.reroll-btn:hover:not(:disabled) {
+  border-color: #4ac96a;
+  color: #90ffaa;
+  background: rgba(20, 55, 28, 0.95);
+}
+.reroll-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
 /* ── Sort bar ── */
 .sort-bar {
   display: flex;

@@ -42,7 +42,9 @@ document.getElementById('back-btn').addEventListener('click', () => {
 document.getElementById('venture-btn').addEventListener('click', () => {
   if (partyIds.length < 4) return;
   if (state.activeRuns.length >= maxParties()) return;
-  startRun(getParty());
+  const party = getParty();   // capture before postDeploy clears partyIds
+  postDeploy();               // remove deployed members from persistent pool
+  startRun(party);
 });
 
 /* ── Adventure page ── */

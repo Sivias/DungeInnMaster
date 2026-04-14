@@ -84,12 +84,15 @@
 
       <div class="applicant-header">
         <div class="section-label" id="applicant-label">Adventurers seeking work</div>
-        <div class="sort-bar" id="sort-bar">
-          <span class="sort-label">Sort:</span>
-          <button class="sort-btn active" data-sort="default">Default</button>
-          <button class="sort-btn" data-sort="rarity">✦ Rarity</button>
-          <button class="sort-btn" data-sort="class">Class</button>
-          <button class="sort-btn" data-sort="power">Power</button>
+        <div class="applicant-controls">
+          <div class="sort-bar" id="sort-bar">
+            <span class="sort-label">Sort:</span>
+            <button class="sort-btn active" data-sort="default">Default</button>
+            <button class="sort-btn" data-sort="rarity">✦ Rarity</button>
+            <button class="sort-btn" data-sort="class">Class</button>
+            <button class="sort-btn" data-sort="power">Power</button>
+          </div>
+          <button class="reroll-btn" id="reroll-btn" onclick="rerollApplicants()">🎲 Re-roll (10g)</button>
         </div>
       </div>
       <div class="applicant-grid" id="applicant-grid"></div>

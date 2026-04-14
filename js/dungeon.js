@@ -59,12 +59,9 @@ function refreshDungeonPage() {
     if (deploySection) deploySection.style.display = '';
     if (limitMsg) limitMsg.textContent = '';
 
-    const guestLv = state.locs.guestroom.level;
-    const count   = 4 + guestLv * 2;
-    applicants    = Array.from({ length: count }, () => generateApplicant(guestLv));
-    partyIds      = [];
-    const lbl = document.getElementById('applicant-label');
-    if (lbl) lbl.textContent = `Adventurers seeking work — Guest Room Lv ${guestLv} (${count} available)`;
+    // Only generate a fresh roster if none exists yet
+    if (applicants.length === 0) _generateApplicants();
+
     renderPartySlots();
     renderApplicantGrid();
     updateVentureBtn();
@@ -73,6 +70,49 @@ function refreshDungeonPage() {
     if (limitMsg) limitMsg.textContent =
       `🔥 Hearth limit reached (${state.activeRuns.length}/${maxParties()} parties). Upgrade the Hearth to deploy more.`;
   }
+}
+
+/* ── Generate (or regenerate) the applicant pool ── */
+function _generateApplicants() {
+  const guestLv = state.locs.guestroom.level;
+  const count   = 4 + guestLv * 2;
+  applicants    = Array.from({ length: count }, () => generateApplicant(guestLv));
+  _updateApplicantLabel();
+}
+
+function _updateApplicantLabel() {
+  const lbl = document.getElementById('applicant-label');
+  if (!lbl) return;
+  const guestLv  = state.locs.guestroom.level;
+  const available = applicants.filter(a => !partyIds.includes(a.id)).length;
+  lbl.textContent = `Adventurers seeking work — Guest Room Lv ${guestLv} (${available} available)`;
+}
+
+/* ── Re-roll cost scales with Guest Room level ── */
+function _rerollCost() {
+  return 10 + state.locs.guestroom.level * 5;
+}
+
+/* ── Spend gold to refresh the adventurer roster ── */
+function rerollApplicants() {
+  const cost = _rerollCost();
+  if (state.gold < cost) {
+    addLog(`❌ Not enough gold to re-roll! Need ${cost}g.`, 'dungeon');
+    return;
+  }
+  setGold(state.gold - cost);
+  partyIds = [];
+  _generateApplicants();
+  renderPartySlots();
+  renderApplicantGrid();
+  updateVentureBtn();
+  addLog(`🎲 A new batch of adventurers arrives at the inn. (−${cost}g)`, 'gold');
+}
+
+/* ── Strip deployed members from pool after venturing ── */
+function postDeploy() {
+  applicants = applicants.filter(a => !partyIds.includes(a.id));
+  partyIds   = [];
 }
 
 /* ── Active expeditions panel ── */
@@ -125,6 +165,8 @@ function renderApplicantGrid() {
   if (!grid) return;
   grid.innerHTML = '';
 
+  _updateApplicantLabel();
+
   // Sort a shallow copy — never mutate the source array
   const sorted = [...applicants];
   if (applicantSort === 'rarity') {
@@ -136,9 +178,9 @@ function renderApplicantGrid() {
   }
 
   sorted.forEach(app => {
-    const inParty = partyIds.includes(app.id);
+    if (partyIds.includes(app.id)) return;   // already in party — hide from list
     const card = document.createElement('div');
-    card.className = `applicant-card${inParty ? ' selected' : ''}`;
+    card.className = 'applicant-card';
     const pct = Math.round((app.power / 25) * 100);
     card.innerHTML = `
       <div class="app-icon">${app.cls.icon}</div>
@@ -265,6 +307,7 @@ function updateVentureBtn() {
   if (state.activeRuns.length >= maxParties()) {
     btn.disabled = true;
     btn.textContent = `🔥 Hearth limit (${state.activeRuns.length}/${maxParties()})`;
+    _updateRerollBtn();
     return;
   }
 
@@ -281,6 +324,16 @@ function updateVentureBtn() {
     const ps = document.getElementById('party-status');
     if (ps) ps.textContent = 'Choose 4 adventurers from the list below.';
   }
+  _updateRerollBtn();
+}
+
+/* ── Keep re-roll button label and disabled state in sync ── */
+function _updateRerollBtn() {
+  const btn = document.getElementById('reroll-btn');
+  if (!btn) return;
+  const cost = _rerollCost();
+  btn.textContent = `🎲 Re-roll (${cost}g)`;
+  btn.disabled = state.gold < cost;
 }
 
 /* ── Get assembled party ── */
