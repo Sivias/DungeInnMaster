@@ -40,7 +40,7 @@ document.getElementById('back-btn').addEventListener('click', () => {
 });
 
 document.getElementById('venture-btn').addEventListener('click', () => {
-  if (partyIds.length < 4) return;
+  if (partyIds.length < 1) return;
   if (state.activeRuns.length >= maxParties()) return;
   const party = getParty();   // capture before postDeploy clears partyIds
   postDeploy();               // remove deployed members from persistent pool

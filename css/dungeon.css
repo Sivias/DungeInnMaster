@@ -210,6 +210,26 @@
 .power-bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #8b6534, #e0c88a); }
 .power-value  { font-size: 0.54rem; color: #8a9080; width: 18px; text-align: right; }
 
+/* ── Hire cost badge ── */
+.app-cost {
+  font-size: 0.58rem;
+  color: #4ac96a;
+  font-weight: bold;
+  margin-top: 3px;
+  letter-spacing: 0.3px;
+}
+.app-cost.unaffordable { color: #e94560; }
+
+/* ── Unaffordable card ── */
+.applicant-card.unaffordable {
+  opacity: 0.5;
+}
+.applicant-card.unaffordable:hover {
+  transform: none;
+  border-color: #2a3a4a;
+  cursor: not-allowed;
+}
+
 /* ── Party status text ── */
 .party-status {
   font-size: 0.9rem;

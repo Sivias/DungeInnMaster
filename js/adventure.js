@@ -337,12 +337,14 @@ function _resolveFightRoaming(run, enc, success, shieldOn, dmgApplied = false) {
   refreshInnExpeditionStatus();
 }
 
-/* ── Weighted encounter selection — easier early, harder late ── */
+/* ── Weighted encounter selection — scales with party power & run progress ── */
 function _pickEncounter(run) {
-  const progress = Math.min(1, (Date.now() - run.startTime) / TOTAL_RUN_MS);
-  const innBonus  = Math.floor(Object.values(state.locs).reduce((s,l)=>s+l.level,0) * 0.4);
-  const maxDiff   = Math.round(5 + progress * 17) + innBonus;
-  const minDiff   = Math.max(3, maxDiff - 9);
+  const progress   = Math.min(1, (Date.now() - run.startTime) / TOTAL_RUN_MS);
+  const activePow  = run.party.filter(m => m.status !== 'incapacitated').reduce((s,m) => s+m.power, 0);
+  const innBonus   = Math.floor(Object.values(state.locs).reduce((s,l)=>s+l.level,0) * 0.4);
+  const powerBonus = Math.floor(activePow / 5);   // solo common ≈ 0, full legendary ≈ 17
+  const maxDiff    = Math.round(3 + progress * 13) + innBonus + powerBonus;
+  const minDiff    = Math.max(1, maxDiff - 9);
   let pool = ENCOUNTERS.filter(e => e.difficulty >= minDiff && e.difficulty <= maxDiff);
   if (!pool.length) pool = ENCOUNTERS.filter(e => e.difficulty <= maxDiff + 3);
   if (!pool.length) pool = ENCOUNTERS;
