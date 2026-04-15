@@ -56,7 +56,7 @@ function startRun(party) {
 function _scheduleRunTimeline(run) {
   // Start encounter loop after a short intro walk (8–13 s)
   const firstDelay = 8000 + Math.random() * 5000;
-  run.timers.push(setTimeout(() => _runEncounterLoop(run), firstDelay));
+  _pushTimer(run, () => _runEncounterLoop(run), firstDelay);
 
   // Separate ticker for inn-pill refreshes (not in run.timers so _cancelRunTimers won't kill it)
   run.uiTickId = setInterval(() => {
@@ -93,8 +93,7 @@ function _triggerRoomEncounter(run) {
   // Move party into the room, then spawn enemy
   run.renderer.moveToRoomAndSpawn(run.roomIdx, enc, () => {
     if (run.phase === 'done') { run.encounterActive = false; return; }
-    const tid = setTimeout(() => _autoFightRoaming(run, enc), 1200 + Math.random() * 800);
-    run.timers.push(tid);
+    _pushTimer(run, () => _autoFightRoaming(run, enc), 1200 + Math.random() * 800);
     _updateAdventureUIIfWatching(run);
   });
 
@@ -193,7 +192,7 @@ function _executeTurn(run, enc, shieldOn, cs, turns, idx) {
 
     case 'header':
       addCombatLog(run, turn.text, 'dungeon', 'log-round');
-      run.timers.push(setTimeout(next, 80));
+      _pushTimer(run, next, 80);
       break;
 
     case 'party': {
@@ -224,7 +223,7 @@ function _executeTurn(run, enc, shieldOn, cs, turns, idx) {
         }
       }
       addCombatLog(run, `⚔️ ${mname} ${fill(tmpl, { e: targetEnemy.name })}. The ${targetEnemy.name} takes ${dmg} damage.${suffix}`, 'dungeon', 'log-party');
-      run.timers.push(setTimeout(next, 430));
+      _pushTimer(run, next, 430);
       break;
     }
 
@@ -267,16 +266,16 @@ function _executeTurn(run, enc, shieldOn, cs, turns, idx) {
 
       // Check for mid-combat party wipe
       if (run.party.every(m => m.status === 'incapacitated')) {
-        run.timers.push(setTimeout(() => _resolveFightRoaming(run, enc, false, shieldOn, true), 500));
+        _pushTimer(run, () => _resolveFightRoaming(run, enc, false, shieldOn, true), 500);
         return;
       }
 
-      run.timers.push(setTimeout(next, 430));
+      _pushTimer(run, next, 430);
       break;
     }
 
     case 'pause':
-      run.timers.push(setTimeout(next, 350));
+      _pushTimer(run, next, 350);
       break;
 
     case 'resolve':
@@ -331,8 +330,7 @@ function _resolveFightRoaming(run, enc, success, shieldOn, dmgApplied = false) {
   const delay = run.encRoomsCleared >= ROOMS_PER_FLOOR
     ? 1500 + Math.random() * 1000   // ~1.5–2.5 s → show rest overlay quickly
     : ENCOUNTER_INTERVAL_MIN + Math.random() * (ENCOUNTER_INTERVAL_MAX - ENCOUNTER_INTERVAL_MIN);
-  const tid = setTimeout(() => _runEncounterLoop(run), delay);
-  run.timers.push(tid);
+  _pushTimer(run, () => _runEncounterLoop(run), delay);
 
   _updateAdventureUIIfWatching(run);
   refreshInnExpeditionStatus();
@@ -430,8 +428,7 @@ function descendFloor(runId) {
   run.renderer.startNewFloor(() => {
     if (run.phase !== 'traveling') return;
     const delay = 6000 + Math.random() * 4000;
-    const tid = setTimeout(() => _runEncounterLoop(run), delay);
-    run.timers.push(tid);
+    _pushTimer(run, () => _runEncounterLoop(run), delay);
     _updateAdventureUIIfWatching(run);
   });
 
@@ -452,8 +449,7 @@ function _doReturnFromRest(runId) {
 
   _beginReturn(run);   // sets phase to 'returning', plays retreat animation
 
-  const tid = setTimeout(() => _endRun(run, 'victory'), run.returnDuration);
-  run.timers.push(tid);
+  _pushTimer(run, () => _endRun(run, 'victory'), run.returnDuration);
 }
 
 /* ── Finalize run ── */
@@ -644,7 +640,9 @@ function updateAdventureUI(run) {
   } else {
     // Traveling: show room progress on this floor
     pct = Math.min(100, (run.encRoomsCleared / ROOMS_PER_FLOOR) * 100);
-    floorLabelText = `Floor ${run.floor} — Room ${run.encRoomsCleared}/${ROOMS_PER_FLOOR}`;
+    floorLabelText = run.encRoomsCleared >= ROOMS_PER_FLOOR
+      ? `Floor ${run.floor} Complete! 🏕️`
+      : `Floor ${run.floor} — Room ${run.encRoomsCleared + 1}/${ROOMS_PER_FLOOR}`;
     timeText = _fmtMs(now - run.floorStartTime);
   }
 
@@ -859,6 +857,18 @@ function _updateDungeonPageIfVisible() {
 function _cancelRunTimers(run) {
   run.timers.forEach(t => { clearTimeout(t); clearInterval(t); });
   run.timers = [];
+}
+
+/* ── One-shot timer that removes itself from run.timers once it fires ── */
+function _pushTimer(run, fn, delay) {
+  let id;
+  id = setTimeout(() => {
+    const i = run.timers.indexOf(id);
+    if (i !== -1) run.timers.splice(i, 1);
+    fn();
+  }, delay);
+  run.timers.push(id);
+  return id;
 }
 
 function _fmtMs(ms) {

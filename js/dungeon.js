@@ -189,7 +189,9 @@ function renderActiveRuns() {
     const phaseIcon  = phaseIcons[run.phase] ?? '🥾';
     const phaseText  = enc && run.encounterActive
       ? `${enc.icon} ${enc.name}`
-      : ({ traveling: `F${run.floor} · Rm ${run.encRoomsCleared+1}/${ROOMS_PER_FLOOR}`,
+      : ({ traveling: run.encRoomsCleared >= ROOMS_PER_FLOOR
+                        ? `🏕️ F${run.floor} cleared`
+                        : `F${run.floor} · Rm ${run.encRoomsCleared + 1}/${ROOMS_PER_FLOOR}`,
            resting:   `🏕️ F${run.floor} cleared`,
            returning: 'Returning',
            done:      'Done' }[run.phase] ?? `Floor ${run.floor}`);
