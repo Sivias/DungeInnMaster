@@ -216,12 +216,20 @@
     order: 0;
   }
 
-  /* Location cards: in-flow grid items */
+  /* Suppress desktop-only floorboard overlay so it doesn't paint over grid items */
+  .room::before { display: none; }
+
+  /* Location cards: in-flow grid items — position:relative so z-index applies */
   .location {
-    position: static;
+    position: relative;
+    z-index: 1;
     width: 100%;
     height: 88px;
   }
+
+  /* Reset desktop absolute offsets (they become relative offsets with position:relative) */
+  .left-1, .left-2, .left-3,
+  .right-1, .right-2, .right-3 { left: auto; right: auto; top: auto; bottom: auto; }
 
   /* Re-pair: Bar|Hearth, Kitchen|Guest Room, Cellar|Stable */
   .left-1  { order: 1; }
@@ -230,4 +238,12 @@
   .right-2 { order: 4; }
   .left-3  { order: 5; }
   .right-3 { order: 6; }
+
+  /* Fully opaque card backgrounds on mobile */
+  .location                   { background: rgb(16,22,38); }
+  .location.lv1,
+  .location.lv2               { background: rgb(50,35,15); }
+  .location.lv3,
+  .location.lv4               { background: rgb(15,30,50); }
+  .location.lv5               { background: rgb(40,30,10); }
 }
