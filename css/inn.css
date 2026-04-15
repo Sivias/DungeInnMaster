@@ -4,6 +4,12 @@
 
 #inn-page { max-width: 628px; }
 
+/* Centre the inn title between the header's left edge and the gold display */
+#inn-page .header h1 {
+  flex: 1;
+  text-align: center;
+}
+
 /* ── Room wrapper ── */
 .room-wrap {
   width: 100%;

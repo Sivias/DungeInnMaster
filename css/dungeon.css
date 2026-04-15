@@ -2,7 +2,7 @@
    DUNGEON.CSS — Party selection screen
 ═══════════════════════════════════════ */
 
-#dungeon-page { max-width: 800px; }
+#dungeon-page { max-width: 800px; --page-max-width: 800px; }
 
 /* ── Deploy section inner layout ── */
 #deploy-section {
@@ -125,19 +125,56 @@
   box-shadow: 0 0 16px rgba(201,168,76,0.45);
 }
 
+/* ── Back / return button — fixed circle anchored to top-left of viewport ── */
 .back-btn {
-  background: rgba(20,28,45,0.9);
-  border: 1px solid #3a5060;
-  color: #8a9aaa;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
+  position: fixed;
+  top: 14px;
+  /* On narrow screens sit 12px from viewport edge;
+     on wide screens track the content's left margin so the button
+     never floats further left than the rest of the page elements. */
+  left: max(12px, calc((100vw - var(--page-max-width)) / 2 + 4px));
+  z-index: 50;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid #3a5060;
+  background: rgba(20,28,45,0.95);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  font-size: 0;            /* hide label text; icon shown via ::before */
   font-family: Georgia, serif;
-  font-size: 0.85rem;
-  transition: border-color 0.2s, color 0.2s;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  user-select: none;
 }
-.back-btn:hover:not(:disabled) { border-color: #c9a84c; color: #c9a84c; }
+.back-btn::before {
+  font-size: 1.2rem;
+  line-height: 1;
+  color: #8a9aaa;
+  transition: color 0.2s;
+}
+#back-btn::before      { content: '←'; }
+#watch-inn-btn::before { content: '🏠'; }
+.back-btn:hover:not(:disabled) { border-color: #c9a84c; box-shadow: 0 2px 16px rgba(201,168,76,0.3); }
+.back-btn:hover:not(:disabled)::before { color: #c9a84c; }
 .back-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Push the header content right so h1 is never hidden behind the fixed button */
+#dungeon-page .header,
+#adventure-page .header {
+  padding-left: 44px;
+}
+
+/* Centre the title between the fixed back-btn space and the gold display */
+#dungeon-page .header h1,
+#adventure-page .header h1 {
+  flex: 1;
+  text-align: center;
+}
 
 /* ── Party slots ── */
 .party-slots { display: flex; flex-wrap: wrap; gap: 12px; width: 100%; }
@@ -335,7 +372,6 @@
 
 /* ── Mobile tweaks ── */
 @media (max-width: 480px) {
-  .back-btn { font-size: 0.72rem; padding: 6px 10px; }
   .sort-bar { flex-wrap: wrap; gap: 4px; }
   .venture-btn { padding: 12px 24px; font-size: 0.9rem; width: 100%; }
   .applicant-header { flex-direction: column; align-items: flex-start; gap: 6px; }
