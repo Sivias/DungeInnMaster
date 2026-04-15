@@ -332,6 +332,7 @@ function _resolveFightRoaming(run, enc, success, shieldOn, dmgApplied = false) {
     : ENCOUNTER_INTERVAL_MIN + Math.random() * (ENCOUNTER_INTERVAL_MAX - ENCOUNTER_INTERVAL_MIN);
   _pushTimer(run, () => _runEncounterLoop(run), delay);
 
+  scheduleSave();
   _updateAdventureUIIfWatching(run);
   refreshInnExpeditionStatus();
 }
@@ -388,6 +389,7 @@ function _enterRestRoom(run) {
   const healMsg = recovered.length ? ` Rest: ${recovered.join(', ')}.` : '';
   addLog(`🏕️ [${_partyLabel(run)}] Floor ${run.floor} cleared!${healMsg}`, 'dungeon');
 
+  scheduleSave();
   if (state.watchingRunId === run.id) _showRestOverlay(run);
   _updateAdventureUIIfWatching(run);
   refreshInnExpeditionStatus();
@@ -425,6 +427,7 @@ function descendFloor(runId) {
 
   addLog(`⬇️ [${_partyLabel(run)}] Descending to Floor ${run.floor}!`, 'dungeon');
 
+  scheduleSave();
   run.renderer.startNewFloor(() => {
     if (run.phase !== 'traveling') return;
     const delay = 6000 + Math.random() * 4000;
@@ -450,6 +453,7 @@ function returnFromRest(runId) {
   _beginReturn(run);   // sets phase to 'returning', plays retreat animation
 
   _pushTimer(run, () => _endRun(run, 'victory'), run.returnDuration);
+  scheduleSave();
 }
 
 /* ── Finalize run ── */
@@ -483,6 +487,7 @@ function _endRun(run, result) {
   }
 
   setGold(state.gold + gold);
+  scheduleSave();   // run.phase is 'done' so it's filtered out of the save
 
   if (state.watchingRunId === run.id) {
     document.getElementById('outcome-icon').textContent  = icon;
@@ -602,6 +607,7 @@ function useAbility(runId, memberId) {
 
   run.activeBuffs = run.activeBuffs.filter(b => b.expiresAt > Date.now());
   addLog(msg, 'dungeon');
+  scheduleSave();
   run.renderer.onAbility(m, ab.type);
   run.renderer.updatePartyStatus(run.party);
   updateAdventureUI(run);

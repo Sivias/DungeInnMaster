@@ -143,6 +143,26 @@ body {
 .rarity-epic      { color: #c04ae9; background: rgba(192,74,233,0.1);  border: 1px solid #803ab0; }
 .rarity-legendary { color: #e9c84a; background: rgba(233,200,74,0.12); border: 1px solid #b09030; }
 
+/* ── Reset-save button (header) ── */
+.reset-save-btn {
+  font-size: 0.6rem;
+  font-family: Georgia, serif;
+  padding: 5px 10px;
+  background: rgba(80,20,20,0.5);
+  border: 1px solid #6a2a2a;
+  border-radius: 6px;
+  color: #a06060;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.reset-save-btn:hover {
+  background: rgba(140,30,30,0.6);
+  border-color: #e06060;
+  color: #f09090;
+}
+
 /* ── Section label ── */
 .section-label {
   align-self: flex-start;

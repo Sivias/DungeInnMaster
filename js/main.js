@@ -1,7 +1,10 @@
 /* ═══════════════════════════════════════
    MAIN.JS — Event listeners & wiring
-   Load order: data → state → inn → dungeon → adventure → main
+   Load order: data → state → persistence → inn → dungeon → adventure → main
 ═══════════════════════════════════════ */
+
+/* ── Restore saved session (must run before any UI interaction) ── */
+loadState();
 
 /* ── Inn page ── */
 document.getElementById('dungeon-btn').addEventListener('click', showDungeonPage);

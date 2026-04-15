@@ -48,6 +48,7 @@ function doUpgrade(id) {
   refreshLocation(id);
   refreshInfoPanel();
   addLog(`🔨 ${DEFS[id].name} upgraded to Level ${state.locs[id].level}!`, 'upgrade');
+  scheduleSave();
 }
 
 function selectLocation(id) {
@@ -106,6 +107,7 @@ setInterval(() => {
     setGold(state.gold + income);
     addLog(`💰 The inn earned ${income} gold from patrons.`, 'gold');
     refreshInfoPanel();
+    scheduleSave();
   }
   refreshInnExpeditionStatus();
 }, TICK_MS);

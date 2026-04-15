@@ -32,6 +32,7 @@ function addReturningAdventurers(survivors) {
   applicants = [...returnees, ...applicants];
   renderApplicantGrid();
   _updateApplicantLabel();
+  scheduleSave();
 }
 
 /* ── Rarity picker ── */
@@ -155,12 +156,14 @@ function rerollApplicants() {
   renderApplicantGrid();
   updateVentureBtn();
   addLog(`🎲 A new batch of adventurers arrives at the inn. (−${rollCost}g)`, 'gold');
+  scheduleSave();
 }
 
 /* ── Strip deployed members from pool after venturing ── */
 function postDeploy() {
   applicants = applicants.filter(a => !partyIds.includes(a.id));
   partyIds   = [];
+  scheduleSave();
 }
 
 /* ── Active expeditions panel ── */
