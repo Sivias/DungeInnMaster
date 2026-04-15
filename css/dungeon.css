@@ -140,9 +140,10 @@
 .back-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── Party slots ── */
-.party-slots { display: flex; gap: 12px; width: 100%; }
+.party-slots { display: flex; flex-wrap: wrap; gap: 12px; width: 100%; }
 .party-slot {
-  flex: 1;
+  flex: 1 1 calc(25% - 9px);
+  min-width: 80px;
   height: 96px;
   background: rgba(16,22,38,0.7);
   border: 2px dashed #2a3a4a;
@@ -154,6 +155,11 @@
   gap: 3px;
   position: relative;
   transition: border-color 0.2s;
+}
+
+/* Wrap to 2×2 on narrow screens */
+@media (max-width: 479px) {
+  .party-slot { flex: 0 0 calc(50% - 6px); }
 }
 .party-slot.filled { border-style: solid; }
 .party-slot .slot-icon  { font-size: 1.5rem; line-height: 1; }
@@ -168,8 +174,8 @@
 
 /* ── Applicant grid ── */
 .applicant-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(138px, 1fr));
   gap: 10px;
   width: 100%;
   max-height: 380px;
@@ -182,7 +188,7 @@
 
 /* ── Applicant card ── */
 .applicant-card {
-  width: 142px;
+  width: 100%;
   background: rgba(16,22,38,0.9);
   border: 2px solid #2a3a4a;
   border-radius: 10px;
@@ -325,5 +331,14 @@
 .hearth-limit-msg {
   width: 100%; font-size: 0.8rem; color: #c9a84c;
   font-style: italic; text-align: center; min-height: 1em;
+}
+
+/* ── Mobile tweaks ── */
+@media (max-width: 480px) {
+  .back-btn { font-size: 0.72rem; padding: 6px 10px; }
+  .sort-bar { flex-wrap: wrap; gap: 4px; }
+  .venture-btn { padding: 12px 24px; font-size: 0.9rem; width: 100%; }
+  .applicant-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .applicant-controls { width: 100%; justify-content: space-between; }
 }
 

@@ -16,7 +16,8 @@
 #dungeon-canvas {
   display: block;
   width: 640px;
-  height: 288px;
+  height: auto;         /* maintain aspect ratio when max-width clamps */
+  aspect-ratio: 320 / 144;
   max-width: 100%;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
