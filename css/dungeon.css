@@ -133,12 +133,13 @@
      on wide screens track the content's left margin so the button
      never floats further left than the rest of the page elements. */
   left: max(12px, calc((100vw - var(--page-max-width)) / 2 + 4px));
-  z-index: 200;
+  z-index: 50;
   width: 44px;
   height: 44px;
   border-radius: 50%;
   border: 1.5px solid #3a5060;
   background: rgba(20,28,45,0.95);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   font-size: 0;            /* hide label text; icon shown via ::before */
   font-family: Georgia, serif;
