@@ -1,7 +1,8 @@
-/* ═══════════════════════════════════════
-   MAIN.JS — Event listeners & wiring
-   Load order: data → state → inn → dungeon → adventure → main
-═══════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════
+   MAIN.JS — App entry point: event wiring only.
+   All game actions are dispatched through the API object.
+   Load order: last, after all game + UI scripts.
+═══════════════════════════════════════════════════════ */
 
 /* ── Inn page ── */
 document.getElementById('dungeon-btn').addEventListener('click', showDungeonPage);
@@ -40,11 +41,7 @@ document.getElementById('back-btn').addEventListener('click', () => {
 });
 
 document.getElementById('venture-btn').addEventListener('click', () => {
-  if (partyIds.length < 1) return;
-  if (state.activeRuns.length >= maxParties()) return;
-  const party = getParty();   // capture before postDeploy clears partyIds
-  postDeploy();               // remove deployed members from persistent pool
-  startRun(party);
+  API.dungeon.deploy();
 });
 
 /* ── Adventure page ── */
@@ -55,3 +52,4 @@ document.getElementById('return-btn').addEventListener('click', () => {
   document.getElementById('outcome-overlay').classList.add('hidden');
   stopWatching();
 });
+

@@ -212,13 +212,29 @@
   </div><!-- /adventure-page -->
 
 
-  <script src="js/data.js"></script>
-  <script src="js/state.js"></script>
-  <script src="js/inn.js"></script>
-  <script src="js/dungeon.js"></script>
-  <script src="js/renderer.js"></script>
-  <script src="js/adventure.js"></script>
-  <script src="js/main.js"></script>
+  <!-- ── Game constants & shared state (no DOM refs) ── -->
+  <script src="server/game/data.js"></script>
+  <script src="server/game/state.js"></script>
+
+  <!-- ── DOM helpers — must load before game files that call them ── -->
+  <script src="client/js/ui-helpers.js"></script>
+
+  <!-- ── Server-side game logic (typeof-guarded UI calls) ── -->
+  <script src="server/game/inn.js"></script>
+  <script src="server/game/dungeon.js"></script>
+
+  <!-- ── Canvas renderer (defines DungeonRenderer before adventure.js) ── -->
+  <script src="client/js/renderer.js"></script>
+  <script src="server/game/adventure.js"></script>
+
+  <!-- ── Client UI layers ── -->
+  <script src="client/js/inn.ui.js"></script>
+  <script src="client/js/dungeon.ui.js"></script>
+  <script src="client/js/adventure.ui.js"></script>
+
+  <!-- ── API abstraction + app entry point ── -->
+  <script src="client/js/api.js"></script>
+  <script src="client/js/main.js"></script>
 
 </body>
 </html>
