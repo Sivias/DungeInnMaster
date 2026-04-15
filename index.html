@@ -18,7 +18,7 @@
   <div id="inn-page" class="page">
 
     <div class="header">
-      <h1>⚔️ DungeInnMaster</h1>
+      <h1>⚔️ DungeInn Master</h1>
       <div class="gold-display">💰 <span id="gold-amount">50</span> Gold</div>
     </div>
 
@@ -36,8 +36,6 @@
       <div class="location right-3" data-id="stable">   <span class="loc-icon">🐴</span><span class="loc-name">Stable</span>    <span class="loc-level">Lv 0</span></div>
     </div><!-- /room -->
     </div><!-- /room-wrap -->
-
-    <div class="door-label">⬇ Entrance</div>
 
     <!-- Active expedition pills -->
     <div class="inn-expedition-status" id="inn-expedition-status"></div>
@@ -180,6 +178,23 @@
       </div>
     </div>
 
+    <!-- Pause overlay — shown when resuming a run that was saved mid-expedition -->
+    <div class="pause-overlay hidden" id="pause-overlay">
+      <div class="pause-box">
+        <div class="pause-icon">⏸️</div>
+        <div class="pause-title">Session Resumed</div>
+        <div class="pause-subtitle">Your party was mid-expedition when you left.</div>
+        <div class="pause-party-summary" id="pause-party-summary"></div>
+        <div class="pause-info" id="pause-info"></div>
+        <div class="pause-actions">
+          <button class="continue-btn" id="continue-btn"
+                  onclick="resumePausedRun(state.watchingRunId)">▶ Continue Expedition</button>
+          <button class="recall-pause-btn" id="recall-pause-btn"
+                  onclick="returnFromPause(state.watchingRunId)">🏠 Return to Inn</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Rest room overlay — shown when party clears a floor -->
     <div class="rest-overlay hidden" id="rest-overlay">
       <div class="rest-box">
@@ -205,15 +220,21 @@
         <div class="outcome-icon"  id="outcome-icon">🏆</div>
         <div class="outcome-title" id="outcome-title">Victory!</div>
         <div class="outcome-msg"   id="outcome-msg">Your party returns victorious!</div>
-        <button class="return-btn" id="return-btn">🏠 Return to Inn</button>
+        <button class="return-btn" id="return-btn">✅ Claim Rewards & Return to Inn</button>
       </div>
     </div>
 
   </div><!-- /adventure-page -->
 
 
+  <!-- ── Debug controls ── -->
+  <button class="reset-save-btn debug-reset-btn" onclick="resetSave()" title="Wipe localStorage save and reload">
+    🗑 Reset Save
+  </button>
+
   <script src="js/data.js"></script>
   <script src="js/state.js"></script>
+  <script src="js/persistence.js"></script>
   <script src="js/inn.js"></script>
   <script src="js/dungeon.js"></script>
   <script src="js/renderer.js"></script>

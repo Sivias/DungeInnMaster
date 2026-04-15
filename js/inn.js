@@ -48,6 +48,7 @@ function doUpgrade(id) {
   refreshLocation(id);
   refreshInfoPanel();
   addLog(`🔨 ${DEFS[id].name} upgraded to Level ${state.locs[id].level}!`, 'upgrade');
+  saveState();   // irreversible spend — bypass debounce
 }
 
 function selectLocation(id) {
@@ -80,21 +81,45 @@ function refreshInnExpeditionStatus() {
   state.activeRuns.forEach(run => {
     const alive = run.party.filter(m => m.status !== 'incapacitated').length;
     const phaseIcons = { traveling:'🥾', returning:'🏠', done:'✅', resting:'🏕️' };
-    const pIcon = phaseIcons[run.phase] ?? '🥾';
+    const pIcon = run.paused ? '⏸️' : (phaseIcons[run.phase] ?? '🥾');
     const label = (run.party[0]?.name.split(' ')[0] ?? 'Party') + "'s party";
+
+    const isPending   = !!run.pendingReward;
+    const isReturning = run.phase === 'returning';
+    const health = run.party.some(m => m.status === 'incapacitated') ? 'pill-danger'
+                 : run.party.some(m => m.status === 'wounded')       ? 'pill-wounded'
+                 : 'pill-healthy';
+    const pillBaseClass = isReturning ? 'pill-returning' : health;
+    const needsPulse    = !isPending && !isReturning && (run.paused || run.phase === 'resting');
+    const pillClass     = `inn-run-pill ${pillBaseClass}${isPending ? ' pill-pending' : needsPulse ? ' pill-pulse' : ''}`;
 
     // Reuse the existing pill element so click listeners are never destroyed
     let pill = el.querySelector(`.inn-run-pill[data-run-id="${run.id}"]`);
     if (!pill) {
       pill = document.createElement('div');
-      pill.className = 'inn-run-pill';
       pill.dataset.runId = run.id;
       pill.title = 'Click to watch this expedition';
       pill.addEventListener('click', () => watchRun(run.id));
       el.appendChild(pill);
     }
-    // Only update the text — the element itself stays in the DOM
-    pill.innerHTML = `${pIcon} ${label} F${run.floor} &nbsp;💛${alive} &nbsp;💰${run.goldEarned}g`;
+    pill.className = pillClass;
+
+    // Build pill text — use textContent to prevent XSS from persisted names/icons.
+    // \u00A0 is a non-breaking space, replacing the &nbsp; that innerHTML used to handle.
+    const nb = '\u00A0';
+    let pillText;
+    if (isPending) {
+      pillText = `${run.pendingReward.icon} ${label} · Tap to claim ${run.pendingReward.gold}g`;
+    } else if (isReturning) {
+      const msLeft  = run.returnDuration > 0
+        ? Math.max(0, run.returnDuration - (Date.now() - run.returnStartTime))
+        : 0;
+      const timeStr = _fmtMs(msLeft);
+      pillText = `🏠 ${label} F${run.floor} ${nb}↩ ${timeStr} ${nb}💛${alive}`;
+    } else {
+      pillText = `${pIcon} ${label} F${run.floor} ${nb}💛${alive} ${nb}💰${run.goldEarned}g`;
+    }
+    pill.textContent = pillText;
   });
 }
 
@@ -106,6 +131,7 @@ setInterval(() => {
     setGold(state.gold + income);
     addLog(`💰 The inn earned ${income} gold from patrons.`, 'gold');
     refreshInfoPanel();
+    scheduleSave();
   }
   refreshInnExpeditionStatus();
 }, TICK_MS);

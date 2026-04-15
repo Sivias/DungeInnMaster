@@ -204,6 +204,67 @@
 }
 .recall-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
+/* ── Pause overlay — session resumed prompt ── */
+.pause-overlay {
+  position: fixed; inset: 0;
+  background: rgba(4, 8, 20, 0.93);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 96;
+}
+.pause-overlay.hidden { display: none; }
+.pause-box {
+  background: rgba(8, 14, 30, 0.98);
+  border: 3px solid #2a4070; border-radius: 16px;
+  padding: clamp(20px, 5vw, 40px) clamp(20px, 6vw, 52px);
+  display: flex; flex-direction: column;
+  align-items: center; gap: 12px;
+  box-shadow: 0 0 60px rgba(20, 60, 140, 0.50);
+  max-width: min(460px, calc(100vw - 32px)); text-align: center;
+}
+.pause-icon     { font-size: 3rem; line-height: 1; }
+.pause-title    { font-size: 1.35rem; color: #80b0e8; letter-spacing: 2px; font-weight: bold; }
+.pause-subtitle { font-size: 0.84rem; color: #6a7a8a; }
+.pause-party-summary {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  justify-content: center; width: 100%;
+}
+.pause-member {
+  font-size: 0.72rem; padding: 4px 10px;
+  background: rgba(20, 30, 50, 0.9); border: 1px solid #2a3a5a;
+  border-radius: 20px; color: #8aa0c0;
+  white-space: nowrap;
+}
+.pause-member.wounded    { border-color: #8a6820; color: #c9a84c; }
+.pause-member.dead       { border-color: #6a2030; color: #8a4050; opacity: 0.55; }
+.pause-info {
+  font-size: 0.73rem; color: #4a6070;
+  border: 1px solid #1a2a3a; border-radius: 8px;
+  padding: 7px 14px; width: 100%; box-sizing: border-box;
+}
+.pause-actions { display: flex; gap: 12px; margin-top: 6px; flex-wrap: wrap; justify-content: center; }
+.continue-btn {
+  padding: 12px 26px; font-size: 0.88rem;
+  font-family: Georgia, serif; font-weight: bold;
+  background: linear-gradient(135deg, #1a3060, #2a50a0);
+  color: #90c8f8; border: 1px solid #4a70b0;
+  border-radius: 8px; cursor: pointer;
+  box-shadow: 0 4px 12px rgba(30, 80, 180, 0.35);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.continue-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(40,100,220,0.45); }
+.recall-pause-btn {
+  padding: 12px 26px; font-size: 0.88rem;
+  font-family: Georgia, serif;
+  background: rgba(30, 20, 8, 0.9);
+  border: 1px solid #6b4a18; color: #c9a84c;
+  border-radius: 8px; cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.recall-pause-btn:hover {
+  border-color: #e0a030; color: #f0c050;
+  box-shadow: 0 0 12px rgba(201,168,76,0.3);
+}
+
 /* ── Outcome overlay ── */
 .outcome-overlay {
   position: fixed; inset: 0;
@@ -293,5 +354,8 @@
   .rest-actions { flex-direction: column; }
   .descend-btn,
   .return-rest-btn { width: 100%; }
+  .pause-actions { flex-direction: column; }
+  .continue-btn,
+  .recall-pause-btn { width: 100%; }
 }
 

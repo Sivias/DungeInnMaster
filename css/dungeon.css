@@ -163,20 +163,7 @@
 .back-btn:hover:not(:disabled)::before { color: #c9a84c; }
 .back-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* Push the header content right so h1 is never hidden behind the fixed button */
-#dungeon-page .header,
-#adventure-page .header {
-  padding-left: 44px;
-}
-
-/* Centre the title between the fixed back-btn space and the gold display */
-#dungeon-page .header h1,
-#adventure-page .header h1 {
-  flex: 1;
-  text-align: center;
-}
-
-/* ── Party slots ── */
+/* ── Back / return button — fixed circle anchored to top-left of viewport ── */
 .party-slots { display: flex; flex-wrap: wrap; gap: 12px; width: 100%; }
 .party-slot {
   flex: 1 1 calc(25% - 9px);
@@ -337,7 +324,17 @@
   flex: 1; min-width: 220px;
   transition: border-color 0.2s;
 }
-.run-card:hover { border-color: #4a8a4a; }
+
+/* ── Health-state border colours ── */
+.run-card.card-healthy { border-color: #2a6a2a; }
+.run-card.card-wounded { border-color: #7a5a10; }
+.run-card.card-danger  { border-color: #7a1820; }
+.run-card.card-pending { border-color: #b09028; }
+
+.run-card.card-healthy:hover { border-color: #4a9a4a; }
+.run-card.card-wounded:hover { border-color: #b09030; }
+.run-card.card-danger:hover  { border-color: #b02535; }
+.run-card.card-pending:hover { border-color: #e0c040; }
 .run-card-icons { display: flex; gap: 3px; font-size: 1.3rem; }
 .run-member-icon { opacity: 1; transition: opacity 0.2s; }
 .run-member-icon.dead    { opacity: 0.22; filter: grayscale(1); }
