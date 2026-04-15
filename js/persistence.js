@@ -79,11 +79,21 @@ function _restoreRun(snap, savedAt) {
     defeatedCount:    snap.defeatedCount,
     encounterActive:  false,
     currentEncounter: null,
+    paused:           false,
     timers:           [],
     uiTickId:         null,
     renderer:         new DungeonRenderer(),
   };
   run.renderer.setup(run.party);
+
+  // ── Roll back any partially-started room (encounterActive was not persisted).
+  // If roomIdx > encRoomsCleared the save was captured after _triggerRoomEncounter
+  // incremented roomIdx but before _resolveFightRoaming incremented encRoomsCleared.
+  // Resetting roomIdx ensures the encounter loop advances to the correct room rather
+  // than skipping ahead or creating a duplicate room entry.
+  if (run.roomIdx > run.encRoomsCleared) {
+    run.roomIdx = run.encRoomsCleared;
+  }
 
   // ── Returning run that finished while the page was closed ──
   if (run.phase === 'returning') {
@@ -108,8 +118,8 @@ function _restoreRun(snap, savedAt) {
 
   // ── Re-wire timers by phase ──
   if (run.phase === 'traveling') {
-    // Resume encounter loop after a short orientation delay
-    _pushTimer(run, () => _runEncounterLoop(run), 3000 + Math.random() * 2000);
+    // Don't auto-resume — mark as paused so the player is prompted on next watch.
+    run.paused = true;
 
   } else if (run.phase === 'resting') {
     // No timer needed — resting waits for player input.

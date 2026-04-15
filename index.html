@@ -180,6 +180,23 @@
       </div>
     </div>
 
+    <!-- Pause overlay — shown when resuming a run that was saved mid-expedition -->
+    <div class="pause-overlay hidden" id="pause-overlay">
+      <div class="pause-box">
+        <div class="pause-icon">⏸️</div>
+        <div class="pause-title">Session Resumed</div>
+        <div class="pause-subtitle">Your party was mid-expedition when you left.</div>
+        <div class="pause-party-summary" id="pause-party-summary"></div>
+        <div class="pause-info" id="pause-info"></div>
+        <div class="pause-actions">
+          <button class="continue-btn" id="continue-btn"
+                  onclick="resumePausedRun(state.watchingRunId)">▶ Continue Expedition</button>
+          <button class="recall-pause-btn" id="recall-pause-btn"
+                  onclick="returnFromPause(state.watchingRunId)">🏠 Return to Inn</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Rest room overlay — shown when party clears a floor -->
     <div class="rest-overlay hidden" id="rest-overlay">
       <div class="rest-box">

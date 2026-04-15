@@ -17,21 +17,22 @@ function createRun(party) {
       return { ...m, hp: maxHp, maxHp, status: 'active' };
     }),
     phase:            'traveling',  // traveling | resting | returning | done
-    floor:            1,            // current floor number
-    roomIdx:          0,            // renderer room index (0=entry, 1-3=encounters)
-    encRoomsCleared:  0,            // encounter rooms finished on this floor
+    floor:            1,
+    roomIdx:          0,
+    encRoomsCleared:  0,
     goldEarned:       0,
-    activeBuffs:      [],           // [{ memberId, type, value, expiresAt, label }]
+    activeBuffs:      [],
     abilitiesUsed:    new Set(),
     startTime:        Date.now(),
     floorStartTime:   Date.now(),
     returnStartTime:  0,
     returnDuration:   0,
     encounterActive:  false,
-    defeatedCount:    0,            // total enemies slain across all floors
+    defeatedCount:    0,
     currentEncounter: null,
-    timers:           [],           // encounter-loop timeouts (NOT the UI ticker)
-    uiTickId:         null,         // interval for inn pill refreshes
+    paused:           false,        // true only when restored mid-expedition
+    timers:           [],
+    uiTickId:         null,
     renderer:         new DungeonRenderer(),
   };
   run.renderer.setup(run.party);
@@ -395,6 +396,54 @@ function _enterRestRoom(run) {
   refreshInnExpeditionStatus();
 }
 
+/* ── Populate and display the pause overlay (session-resumed prompt) ── */
+function _showPauseOverlay(run) {
+  const overlay = document.getElementById('pause-overlay');
+  if (!overlay || state.watchingRunId !== run.id) return;
+
+  const summaryEl = document.getElementById('pause-party-summary');
+  if (summaryEl) {
+    summaryEl.innerHTML = run.party.map(m => {
+      const hpPct  = Math.max(0, Math.round((m.hp / m.maxHp) * 100));
+      const cls    = m.status === 'incapacitated' ? 'dead' : m.status === 'wounded' ? 'wounded' : '';
+      return `<span class="pause-member ${cls}">${m.cls.icon} ${m.name.split(' ')[0]} ${hpPct}%</span>`;
+    }).join('');
+  }
+
+  const infoEl = document.getElementById('pause-info');
+  if (infoEl) {
+    const alive = run.party.filter(m => m.status !== 'incapacitated').length;
+    infoEl.textContent =
+      `Floor ${run.floor} · Room ${run.encRoomsCleared + 1}/${ROOMS_PER_FLOOR}` +
+      ` · 💰 ${run.goldEarned}g earned · 💛 ${alive}/${run.party.length} alive`;
+  }
+
+  overlay.classList.remove('hidden');
+}
+
+/* ── Player resumes a paused run — starts the encounter loop ── */
+function resumePausedRun(runId) {
+  const run = state.activeRuns.find(r => r.id === runId);
+  if (!run || !run.paused) return;
+  document.getElementById('pause-overlay')?.classList.add('hidden');
+  run.paused = false;
+  _pushTimer(run, () => _runEncounterLoop(run), 3000 + Math.random() * 2000);
+  addLog(`▶ [${_partyLabel(run)}] Expedition resumed on Floor ${run.floor}.`, 'dungeon');
+  updateAdventureUI(run);
+  scheduleSave();
+}
+
+/* ── Player chooses to return to the inn from the pause prompt ── */
+function returnFromPause(runId) {
+  const run = state.activeRuns.find(r => r.id === runId);
+  if (!run || !run.paused) return;
+  document.getElementById('pause-overlay')?.classList.add('hidden');
+  run.paused = false;
+  _cancelRunTimers(run);
+  run.renderer.onRetreat(null);
+  _endRun(run, 'recall');
+}
+
 /* ── Populate and display the rest-room overlay ── */
 function _showRestOverlay(run) {
   const overlay = document.getElementById('rest-overlay');
@@ -531,7 +580,15 @@ function watchRun(runId) {
   run.renderer.attach(document.getElementById('dungeon-canvas'));
   showPage('adventure-page');
   document.getElementById('outcome-overlay').classList.add('hidden');
-  // Show rest overlay if this run is waiting at the stairs
+
+  // Pause overlay — shown when session resumes on a mid-expedition traveling run
+  const pauseOverlay = document.getElementById('pause-overlay');
+  if (pauseOverlay) {
+    if (run.paused) _showPauseOverlay(run);
+    else pauseOverlay.classList.add('hidden');
+  }
+
+  // Rest overlay — shown when party is at the dungeon stairs
   const restOverlay = document.getElementById('rest-overlay');
   if (restOverlay) {
     if (run.phase === 'resting') _showRestOverlay(run);
@@ -555,6 +612,7 @@ function stopWatching() {
 function recallParty() {
   const run = state.activeRuns.find(r => r.id === state.watchingRunId);
   if (!run || run.phase === 'done' || run.phase === 'returning') return;
+  if (run.paused) return;   // handled by the pause overlay
   // At the rest room: treat recall as "Return to Inn" (full gold)
   if (run.phase === 'resting') { returnFromRest(run.id); return; }
   _cancelRunTimers(run);
@@ -683,7 +741,7 @@ function updateAdventureUI(run) {
   document.getElementById('adv-status').textContent = _phaseDesc(run);
   const recallBtn = document.getElementById('recall-btn');
   if (recallBtn) {
-    recallBtn.disabled = run.phase === 'done' || run.phase === 'returning' || run.phase === 'resting';
+    recallBtn.disabled = run.paused || run.phase === 'done' || run.phase === 'returning' || run.phase === 'resting';
   }
 }
 
@@ -697,8 +755,8 @@ function renderAdvParty(run) {
     const hpColor = hpPct>55?'#4ac96a':hpPct>28?'#e9c84a':'#e94560';
     const used    = run.abilitiesUsed.has(m.id);
     const incap   = m.status === 'incapacitated';
-    // Abilities usable any time except returning/done
-    const canUse  = !used && !incap && run.phase !== 'returning' && run.phase !== 'done';
+    // Abilities usable any time except returning/done/paused
+    const canUse  = !used && !incap && !run.paused && run.phase !== 'returning' && run.phase !== 'done';
     const buff    = run.activeBuffs.find(b => b.memberId===m.id && b.expiresAt>now);
 
     // Reuse existing card to prevent hover flicker and missed clicks
@@ -899,6 +957,7 @@ function _phaseTitle(run) {
 }
 
 function _phaseDesc(run) {
+  if (run.paused) return '⏸️ Session resumed — continue the expedition or return to the inn.';
   switch (run.phase) {
     case 'traveling':  return '🥾 Your party pushes deeper into the dungeon…';
     case 'resting':    return '🏕️ The party rests at the dungeon stairs. Descend or return to the inn?';

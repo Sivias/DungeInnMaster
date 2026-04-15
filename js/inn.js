@@ -81,7 +81,7 @@ function refreshInnExpeditionStatus() {
   state.activeRuns.forEach(run => {
     const alive = run.party.filter(m => m.status !== 'incapacitated').length;
     const phaseIcons = { traveling:'🥾', returning:'🏠', done:'✅', resting:'🏕️' };
-    const pIcon = phaseIcons[run.phase] ?? '🥾';
+    const pIcon = run.paused ? '⏸️' : (phaseIcons[run.phase] ?? '🥾');
     const label = (run.party[0]?.name.split(' ')[0] ?? 'Party') + "'s party";
 
     // Reuse the existing pill element so click listeners are never destroyed

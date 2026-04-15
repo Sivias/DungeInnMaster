@@ -189,15 +189,17 @@ function renderActiveRuns() {
 
     const enc = run.currentEncounter;
     const phaseIcons = { traveling:'🥾', returning:'🏠', done:'✅', resting:'🏕️' };
-    const phaseIcon  = phaseIcons[run.phase] ?? '🥾';
-    const phaseText  = enc && run.encounterActive
-      ? `${enc.icon} ${enc.name}`
-      : ({ traveling: run.encRoomsCleared >= ROOMS_PER_FLOOR
-                        ? `🏕️ F${run.floor} cleared`
-                        : `F${run.floor} · Rm ${run.encRoomsCleared + 1}/${ROOMS_PER_FLOOR}`,
-           resting:   `🏕️ F${run.floor} cleared`,
-           returning: 'Returning',
-           done:      'Done' }[run.phase] ?? `Floor ${run.floor}`);
+    const phaseIcon  = run.paused ? '⏸️' : (phaseIcons[run.phase] ?? '🥾');
+    const phaseText  = run.paused
+      ? `F${run.floor} — Paused · Tap to resume`
+      : enc && run.encounterActive
+        ? `${enc.icon} ${enc.name}`
+        : ({ traveling: run.encRoomsCleared >= ROOMS_PER_FLOOR
+                          ? `🏕️ F${run.floor} cleared`
+                          : `F${run.floor} · Rm ${run.encRoomsCleared + 1}/${ROOMS_PER_FLOOR}`,
+             resting:   `🏕️ F${run.floor} cleared`,
+             returning: 'Returning',
+             done:      'Done' }[run.phase] ?? `Floor ${run.floor}`);
 
     // Room-based mini-bar (return-walk progress when returning)
     const bar = run.phase === 'returning' && run.returnDuration > 0
