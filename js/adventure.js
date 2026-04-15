@@ -437,7 +437,7 @@ function descendFloor(runId) {
 }
 
 /* ── Player chooses to return to the inn from the rest room ── */
-function _doReturnFromRest(runId) {
+function returnFromRest(runId) {
   const run = state.activeRuns.find(r => r.id === runId);
   if (!run || run.phase !== 'resting') return;
 
@@ -551,7 +551,7 @@ function recallParty() {
   const run = state.activeRuns.find(r => r.id === state.watchingRunId);
   if (!run || run.phase === 'done' || run.phase === 'returning') return;
   // At the rest room: treat recall as "Return to Inn" (full gold)
-  if (run.phase === 'resting') { _doReturnFromRest(run.id); return; }
+  if (run.phase === 'resting') { returnFromRest(run.id); return; }
   _cancelRunTimers(run);
   run.renderer.onRetreat(null);
   _endRun(run, 'recall');
