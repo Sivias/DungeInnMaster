@@ -31,6 +31,7 @@ function createRun(party) {
     defeatedCount:    0,
     currentEncounter: null,
     paused:           false,        // true only when restored mid-expedition
+    pendingReward:    null,         // { gold, result, icon, title, msg, survivors } — awaiting player claim
     timers:           [],
     uiTickId:         null,
     renderer:         new DungeonRenderer(),
@@ -444,6 +445,61 @@ function returnFromPause(runId) {
   _endRun(run, 'recall');
 }
 
+/* ── Populate and show the outcome overlay for a completed pending-reward run ── */
+function _showPendingRewardOverlay(run) {
+  if (!run || !run.pendingReward || state.watchingRunId !== run.id) return;
+  const pr = run.pendingReward;
+  document.getElementById('outcome-icon').textContent  = pr.icon;
+  document.getElementById('outcome-title').textContent = pr.title;
+  document.getElementById('outcome-msg').textContent   = pr.msg;
+  const btn = document.getElementById('return-btn');
+  if (btn) {
+    btn.textContent = pr.result === 'wipe'
+      ? '💔 Mourn & Return to Inn'
+      : `✅ Claim ${pr.gold}g & Return to Inn`;
+  }
+  document.getElementById('outcome-overlay').classList.remove('hidden');
+}
+
+/* ── Player claims a finished run's reward ── */
+function receiveRun(runId) {
+  const run = state.activeRuns.find(r => r.id === runId);
+  if (!run || !run.pendingReward) return;
+
+  const { gold, result, survivors } = run.pendingReward;
+  run.pendingReward = null;
+  if (run.uiTickId) { clearInterval(run.uiTickId); run.uiTickId = null; }
+
+  setGold(state.gold + gold);
+
+  // Log the result
+  const floorWord = run.floor > 1 ? `${run.floor} floors` : '1 floor';
+  if (result === 'victory') {
+    addLog(`🏆 [${_partyLabel(run)}] Cleared ${floorWord}! ${run.defeatedCount} slain · ${gold}g received.`, 'gold');
+  } else if (result === 'wipe') {
+    addLog(`💀 [${_partyLabel(run)}] Party wiped. No gold recovered.`, 'dungeon');
+  } else {
+    addLog(`📯 [${_partyLabel(run)}] Recalled! ${gold}g received.`, 'dungeon');
+  }
+
+  // Return survivors to the applicant pool
+  if (survivors && survivors.length > 0) addReturningAdventurers(survivors);
+
+  // Remove run from active list and clean up renderer
+  const idx = state.activeRuns.indexOf(run);
+  if (idx !== -1) state.activeRuns.splice(idx, 1);
+  run.renderer.hide();
+
+  // Navigate back to inn
+  document.getElementById('outcome-overlay').classList.add('hidden');
+  if (state.watchingRunId === run.id) state.watchingRunId = null;
+  showPage('inn-page');
+  refreshInfoPanel();
+  _updateDungeonPageIfVisible();
+  refreshInnExpeditionStatus();
+  scheduleSave();
+}
+
 /* ── Populate and display the rest-room overlay ── */
 function _showRestOverlay(run) {
   const overlay = document.getElementById('rest-overlay');
@@ -505,13 +561,14 @@ function returnFromRest(runId) {
   scheduleSave();
 }
 
-/* ── Finalize run ── */
+/* ── Finalize run — gold held in pendingReward until player claims it ── */
 function _endRun(run, result) {
   if (run.phase === 'done') return;
   run.phase = 'done';
   _cancelRunTimers(run);
   if (run.uiTickId) { clearInterval(run.uiTickId); run.uiTickId = null; }
   document.getElementById('rest-overlay')?.classList.add('hidden');
+  document.getElementById('pause-overlay')?.classList.add('hidden');
 
   let gold = run.goldEarned;
   let icon, title, msg;
@@ -523,46 +580,30 @@ function _endRun(run, result) {
     icon='🏆'; title='Dungeon Cleared!';
     const floorWord = run.floor > 1 ? `${run.floor} floors` : '1 floor';
     msg=`Party returned from ${floorWord}! ${run.defeatedCount} enemies slain. Earned ${gold} gold (includes +${bonus} completion bonus).`;
-    addLog(`🏆 [${_partyLabel(run)}] Cleared ${floorWord}! ${run.defeatedCount} slain · ${gold}g total.`,'gold');
   } else if (result === 'wipe') {
     gold=0; icon='💀'; title='Party Wiped!';
     msg='Every adventurer fell. No gold recovered.';
-    addLog(`💀 [${_partyLabel(run)}] Party wiped.`,'dungeon');
   } else {
-    const kept=Math.floor(gold*0.5);
-    addLog(`📯 [${_partyLabel(run)}] Recalled! Kept ${kept}g.`,'dungeon');
-    gold=kept; icon='📯'; title='Party Recalled';
+    gold=Math.floor(gold*0.5); icon='📯'; title='Party Recalled';
     msg=`Party recalled with ${gold} gold. (Half lost in hasty retreat.)`;
   }
 
-  setGold(state.gold + gold);
-  scheduleSave();   // run.phase is 'done' so it's filtered out of the save
+  const survivors = result !== 'wipe' ? run.party.filter(m => m.status !== 'incapacitated') : [];
+  run.pendingReward = { gold, result, icon, title, msg, survivors };
+
+  // Keep the pill refreshing while waiting for the player to claim
+  run.uiTickId = setInterval(() => {
+    if (!run.pendingReward) { clearInterval(run.uiTickId); run.uiTickId = null; return; }
+    refreshInnExpeditionStatus();
+  }, 500);
 
   if (state.watchingRunId === run.id) {
-    document.getElementById('outcome-icon').textContent  = icon;
-    document.getElementById('outcome-title').textContent = title;
-    document.getElementById('outcome-msg').textContent   = msg;
-    document.getElementById('outcome-overlay').classList.remove('hidden');
+    _showPendingRewardOverlay(run);
     _updateAdventureUIIfWatching(run);
   }
   refreshInnExpeditionStatus();
   _updateDungeonPageIfVisible();
-
-  setTimeout(() => {
-    const idx = state.activeRuns.indexOf(run);
-    if (idx !== -1) state.activeRuns.splice(idx, 1);
-    run.renderer.hide();
-    if (state.watchingRunId === run.id) state.watchingRunId = null;
-
-    // Return survivors to the adventurer pool (free of charge) after victory/recall
-    if (result !== 'wipe') {
-      const survivors = run.party.filter(m => m.status !== 'incapacitated');
-      if (survivors.length > 0) addReturningAdventurers(survivors);
-    }
-
-    _updateDungeonPageIfVisible();
-    refreshInnExpeditionStatus();
-  }, 5000);
+  scheduleSave();
 }
 
 /* ══════════════════════════════
@@ -579,16 +620,19 @@ function watchRun(runId) {
   if (!run) return;
   run.renderer.attach(document.getElementById('dungeon-canvas'));
   showPage('adventure-page');
-  document.getElementById('outcome-overlay').classList.add('hidden');
 
-  // Pause overlay — shown when session resumes on a mid-expedition traveling run
+  // Outcome overlay: pending reward from a completed run
+  if (run.pendingReward) _showPendingRewardOverlay(run);
+  else document.getElementById('outcome-overlay').classList.add('hidden');
+
+  // Pause overlay: session resumed on a mid-expedition traveling run
   const pauseOverlay = document.getElementById('pause-overlay');
   if (pauseOverlay) {
     if (run.paused) _showPauseOverlay(run);
     else pauseOverlay.classList.add('hidden');
   }
 
-  // Rest overlay — shown when party is at the dungeon stairs
+  // Rest overlay: party at the dungeon stairs
   const restOverlay = document.getElementById('rest-overlay');
   if (restOverlay) {
     if (run.phase === 'resting') _showRestOverlay(run);
@@ -603,7 +647,8 @@ function stopWatching() {
     if (run) run.renderer.detach();
   }
   state.watchingRunId = null;
-  document.getElementById('rest-overlay')?.classList.add('hidden');
+  ['rest-overlay', 'pause-overlay', 'outcome-overlay'].forEach(id =>
+    document.getElementById(id)?.classList.add('hidden'));
   showPage('inn-page');
   refreshInfoPanel();
   refreshInnExpeditionStatus();
@@ -958,6 +1003,8 @@ function _phaseTitle(run) {
 
 function _phaseDesc(run) {
   if (run.paused) return '⏸️ Session resumed — continue the expedition or return to the inn.';
+  if (run.phase === 'done' && run.pendingReward)
+    return `${run.pendingReward.icon} ${run.pendingReward.title} — claim your reward.`;
   switch (run.phase) {
     case 'traveling':  return '🥾 Your party pushes deeper into the dungeon…';
     case 'resting':    return '🏕️ The party rests at the dungeon stairs. Descend or return to the inn?';

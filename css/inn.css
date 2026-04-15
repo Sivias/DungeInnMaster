@@ -2,13 +2,9 @@
    INN.CSS — Inn room & upgrade UI
 ═══════════════════════════════════════ */
 
-#inn-page { max-width: 628px; }
+#inn-page { max-width: 628px; --page-max-width: 628px; }
 
-/* Centre the inn title between the header's left edge and the gold display */
-#inn-page .header h1 {
-  flex: 1;
-  text-align: center;
-}
+#inn-page .header h1 { text-align: left; }
 
 /* ── Room wrapper ── */
 .room-wrap {
@@ -165,16 +161,55 @@
 }
 .inn-run-pill {
   padding: 6px 16px; font-size: 0.72rem;
-  background: rgba(15,35,10,0.9);
   border: 1px solid #3a6a2a; border-radius: 20px;
-  color: #80c060; cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
   user-select: none;
 }
-.inn-run-pill:hover {
-  border-color: #4ac96a;
-  background: rgba(25,50,15,0.95);
+
+/* ── Health-state colours ── */
+.inn-run-pill.pill-healthy {
+  background: rgba(15, 42, 10, 0.92); border-color: #2a7a2a; color: #70d050;
 }
+.inn-run-pill.pill-wounded {
+  background: rgba(42, 30, 5,  0.92); border-color: #8a6010; color: #d0a030;
+}
+.inn-run-pill.pill-danger {
+  background: rgba(42, 10, 10, 0.92); border-color: #8a1828; color: #d04050;
+}
+
+/* ── Returning state — blue, no pulse needed ── */
+.inn-run-pill.pill-returning {
+  background: rgba(8, 18, 50, 0.93); border-color: #2a4aaa; color: #70a8e8;
+}
+.inn-run-pill.pill-returning:hover {
+  border-color: #5070e0; background: rgba(12, 24, 68, 0.97);
+}
+
+/* ── Hover (per health state) ── */
+.inn-run-pill.pill-healthy:hover { border-color: #4ac96a; background: rgba(20,55,12,0.97); }
+.inn-run-pill.pill-wounded:hover { border-color: #c0a040; background: rgba(55,38, 5,0.97); }
+.inn-run-pill.pill-danger:hover  { border-color: #e04555; background: rgba(60,12,12,0.97); }
+
+/* ── Pulse keyframes (glow colour matches health state) ── */
+@keyframes _pill-glow-green  { 0%,100%{box-shadow:none} 50%{box-shadow:0 0 10px 3px rgba(60,200,60,0.55)} }
+@keyframes _pill-glow-yellow { 0%,100%{box-shadow:none} 50%{box-shadow:0 0 10px 3px rgba(210,170,20,0.55)} }
+@keyframes _pill-glow-red    { 0%,100%{box-shadow:none} 50%{box-shadow:0 0 10px 3px rgba(230,45,55,0.55)} }
+@keyframes _pill-glow-gold   { 0%,100%{box-shadow:none} 50%{box-shadow:0 0 12px 4px rgba(220,170,30,0.75)} }
+
+.inn-run-pill.pill-healthy.pill-pulse { animation: _pill-glow-green  2.1s ease-in-out infinite; }
+.inn-run-pill.pill-wounded.pill-pulse { animation: _pill-glow-yellow 2.1s ease-in-out infinite; }
+.inn-run-pill.pill-danger.pill-pulse  { animation: _pill-glow-red    2.1s ease-in-out infinite; }
+
+/* ── Pending reward pill — blue (same tone as returning), always pulses ── */
+@keyframes _pill-glow-blue { 0%,100%{box-shadow:none} 50%{box-shadow:0 0 12px 4px rgba(60,120,240,0.65)} }
+.inn-run-pill.pill-pending {
+  border-color: #2a4aaa; color: #80b8f0; font-weight: bold;
+  animation: _pill-glow-blue 1.5s ease-in-out infinite;
+}
+.inn-run-pill.pill-pending.pill-healthy { background: rgba(8,  18, 52, 0.94); }
+.inn-run-pill.pill-pending.pill-wounded { background: rgba(12, 18, 52, 0.94); }
+.inn-run-pill.pill-pending.pill-danger  { background: rgba(18, 10, 48, 0.94); }
 
 /* ── Info panel stacks vertically on very small screens ── */
 @media (max-width: 420px) {

@@ -28,9 +28,11 @@ body {
 .header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   width: 100%;
   gap: 8px;
+  /* Equal padding on both sides keeps the title clear of the two fixed corner buttons */
+  padding: 0 56px;
 }
 .header h1 {
   color: #e0c88a;
@@ -38,10 +40,16 @@ body {
   letter-spacing: 2px;
   text-shadow: 0 0 18px rgba(224,200,138,0.4);
   white-space: nowrap;
+  text-align: center;
+  width: 100%;
 }
 
-/* ── Gold display ── */
+/* ── Gold display — fixed anchor top-right, mirrors the back-btn top-left ── */
 .gold-display {
+  position: fixed;
+  top: 14px;
+  right: max(12px, calc((100vw - var(--page-max-width, 628px)) / 2 + 4px));
+  z-index: 200;
   background: linear-gradient(135deg, #3a2e10, #5a4820);
   border: 2px solid #c9a84c;
   border-radius: 8px;
@@ -52,6 +60,8 @@ body {
   letter-spacing: 1px;
   box-shadow: 0 0 12px rgba(201,168,76,0.25);
   white-space: nowrap;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
 }
 
 /* ── Mobile typography & spacing ── */
@@ -60,22 +70,18 @@ body {
     padding: 16px 12px;
     gap: 14px;
   }
-  /* Allow header items to wrap rather than overflow horizontally */
   .header {
-    flex-wrap: wrap;
-    row-gap: 6px;
+    padding: 0 48px;   /* slightly tighter but still clear of corner buttons */
   }
   .header h1 {
     font-size: 1.15rem;
     letter-spacing: 1px;
-    white-space: normal;   /* override desktop nowrap */
-    flex: 1 1 auto;        /* fills space between back-btn and gold; wraps text if needed */
+    white-space: normal;
     min-width: 0;
   }
   .gold-display {
     font-size: 0.85rem;
     padding: 6px 12px;
-    flex-shrink: 0;        /* never squish the gold counter */
   }
   .section-label { font-size: 0.65rem; }
 }

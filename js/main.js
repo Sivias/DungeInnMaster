@@ -55,6 +55,5 @@ document.getElementById('watch-inn-btn').addEventListener('click', stopWatching)
 document.getElementById('recall-btn').addEventListener('click', recallParty);
 
 document.getElementById('return-btn').addEventListener('click', () => {
-  document.getElementById('outcome-overlay').classList.add('hidden');
-  stopWatching();
+  receiveRun(state.watchingRunId);
 });

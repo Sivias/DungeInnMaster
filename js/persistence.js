@@ -28,7 +28,7 @@ function saveState() {
       applicants:           applicants,
       applicantRosterLevel: _applicantRosterLevel,
       activeRuns:           state.activeRuns
-                              .filter(r => r.phase !== 'done')
+                              .filter(r => r.phase !== 'done' || r.pendingReward !== null)
                               .map(_serializeRun),
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
@@ -54,6 +54,7 @@ function _serializeRun(run) {
     returnStartTime: run.returnStartTime,
     returnDuration:  run.returnDuration,
     defeatedCount:   run.defeatedCount,
+    pendingReward:   run.pendingReward ?? null,  // preserved so unclaimed rewards survive reload
   };
 }
 
@@ -80,6 +81,7 @@ function _restoreRun(snap, savedAt) {
     encounterActive:  false,
     currentEncounter: null,
     paused:           false,
+    pendingReward:    snap.pendingReward ?? null,
     timers:           [],
     uiTickId:         null,
     renderer:         new DungeonRenderer(),
@@ -93,6 +95,17 @@ function _restoreRun(snap, savedAt) {
   // than skipping ahead or creating a duplicate room entry.
   if (run.roomIdx > run.encRoomsCleared) {
     run.roomIdx = run.encRoomsCleared;
+  }
+
+  // ── Done run with an unclaimed reward — restore pill without any combat timers ──
+  if (run.phase === 'done') {
+    if (!run.pendingReward) return null;   // fully claimed; discard
+    state.activeRuns.push(run);
+    run.uiTickId = setInterval(() => {
+      if (!run.pendingReward) { clearInterval(run.uiTickId); run.uiTickId = null; return; }
+      refreshInnExpeditionStatus();
+    }, 500);
+    return run;
   }
 
   // ── Returning run that finished while the page was closed ──
@@ -140,19 +153,34 @@ function _restoreRun(snap, savedAt) {
   return run;
 }
 
-/* ── Award gold + survivors for a run that completed while the tab was away ── */
+/* ── Park a run that completed while the tab was away as a pending reward ── */
 function _resolveReturnedRun(run) {
   const innBonus = Object.values(state.locs).reduce((s, l) => s + l.level, 0);
   const bonus    = Math.floor(12 + run.floor * 8 + innBonus * 2);
   const gold     = run.goldEarned + bonus;
-  setGold(state.gold + gold);
+  const survivors = run.party.filter(m => m.status !== 'incapacitated');
+  const floorWord = run.floor > 1 ? `${run.floor} floors` : '1 floor';
+
+  run.phase = 'done';
+  run.pendingReward = {
+    gold, result: 'victory', icon: '🏆',
+    title: 'Returned While Away!',
+    msg:   `Party cleared ${floorWord} while you were away! ` +
+           `${run.defeatedCount} enemies slain. Claim ${gold} gold.`,
+    survivors,
+  };
+
   addLog(
     `🏆 [${_partyLabel(run)}] Returned while you were away! ` +
-    `${run.defeatedCount} slain · ${gold}g earned.`,
+    `${run.defeatedCount} slain · ${gold}g waiting to be claimed.`,
     'gold'
   );
-  const survivors = run.party.filter(m => m.status !== 'incapacitated');
-  if (survivors.length > 0) addReturningAdventurers(survivors);
+
+  state.activeRuns.push(run);
+  run.uiTickId = setInterval(() => {
+    if (!run.pendingReward) { clearInterval(run.uiTickId); run.uiTickId = null; return; }
+    refreshInnExpeditionStatus();
+  }, 500);
 }
 
 /* ── Restore full game state from localStorage; returns true on success ── */
@@ -187,10 +215,11 @@ function loadState() {
     _applicantRosterLevel = data.applicantRosterLevel ?? -1;
   }
 
-  // Active runs
+  // Active runs (including done runs with unclaimed rewards)
   if (Array.isArray(data.activeRuns)) {
     data.activeRuns.forEach(snap => {
-      if (!snap || snap.phase === 'done') return;
+      if (!snap) return;
+      if (snap.phase === 'done' && !snap.pendingReward) return;  // fully resolved
       _restoreRun(snap, data.savedAt);
     });
   }

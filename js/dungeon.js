@@ -179,7 +179,6 @@ function renderActiveRuns() {
   container.innerHTML = '';
   state.activeRuns.forEach(run => {
     const card = document.createElement('div');
-    card.className = 'run-card';
 
     const alive = run.party.filter(m => m.status !== 'incapacitated').length;
     const total = run.party.length;
@@ -187,33 +186,44 @@ function renderActiveRuns() {
       `<span class="run-member-icon ${m.status==='incapacitated'?'dead':m.status==='wounded'?'wounded':''}">${m.cls.icon}</span>`
     ).join('');
 
+    const isPending = !!run.pendingReward;
+    const health = run.party.some(m => m.status === 'incapacitated') ? 'card-danger'
+                 : run.party.some(m => m.status === 'wounded')       ? 'card-wounded'
+                 : 'card-healthy';
+    card.className = `run-card ${health}${isPending ? ' card-pending' : ''}`;
+
     const enc = run.currentEncounter;
     const phaseIcons = { traveling:'🥾', returning:'🏠', done:'✅', resting:'🏕️' };
     const phaseIcon  = run.paused ? '⏸️' : (phaseIcons[run.phase] ?? '🥾');
     const phaseText  = run.paused
       ? `F${run.floor} — Paused · Tap to resume`
-      : enc && run.encounterActive
-        ? `${enc.icon} ${enc.name}`
-        : ({ traveling: run.encRoomsCleared >= ROOMS_PER_FLOOR
-                          ? `🏕️ F${run.floor} cleared`
-                          : `F${run.floor} · Rm ${run.encRoomsCleared + 1}/${ROOMS_PER_FLOOR}`,
-             resting:   `🏕️ F${run.floor} cleared`,
-             returning: 'Returning',
-             done:      'Done' }[run.phase] ?? `Floor ${run.floor}`);
+      : isPending
+        ? `${run.pendingReward.icon} ${run.pendingReward.title}`
+        : enc && run.encounterActive
+          ? `${enc.icon} ${enc.name}`
+          : ({ traveling: run.encRoomsCleared >= ROOMS_PER_FLOOR
+                            ? `🏕️ F${run.floor} cleared`
+                            : `F${run.floor} · Rm ${run.encRoomsCleared + 1}/${ROOMS_PER_FLOOR}`,
+               resting:   `🏕️ F${run.floor} cleared`,
+               returning: 'Returning',
+               done:      'Done' }[run.phase] ?? `Floor ${run.floor}`);
 
-    // Room-based mini-bar (return-walk progress when returning)
-    const bar = run.phase === 'returning' && run.returnDuration > 0
-      ? Math.min(100, ((Date.now() - run.returnStartTime) / run.returnDuration) * 100).toFixed(0)
-      : Math.min(100, (run.encRoomsCleared / ROOMS_PER_FLOOR) * 100).toFixed(0);
+    // Room-based mini-bar (100% for pending/done, return-walk progress when returning)
+    const bar = isPending ? '100'
+      : run.phase === 'returning' && run.returnDuration > 0
+        ? Math.min(100, ((Date.now() - run.returnStartTime) / run.returnDuration) * 100).toFixed(0)
+        : Math.min(100, (run.encRoomsCleared / ROOMS_PER_FLOOR) * 100).toFixed(0);
+
+    const watchLabel = isPending ? '📬 Claim' : '👁 Watch';
 
     card.innerHTML = `
       <div class="run-card-icons">${icons}</div>
       <div class="run-card-info">
         <div class="run-card-phase">${phaseIcon} ${phaseText}</div>
-        <div class="run-card-stats">💛 ${alive}/${total} alive &nbsp;·&nbsp; 💰 ${run.goldEarned}g</div>
+        <div class="run-card-stats">💛 ${alive}/${total} alive &nbsp;·&nbsp; 💰 ${isPending ? run.pendingReward.gold : run.goldEarned}g</div>
         <div class="run-mini-bar-bg"><div class="run-mini-bar-fill" style="width:${bar}%"></div></div>
       </div>
-      <button class="watch-btn">👁 Watch</button>`;
+      <button class="watch-btn">${watchLabel}</button>`;
     card.querySelector('.watch-btn').addEventListener('click', () => watchRun(run.id));
     container.appendChild(card);
   });
