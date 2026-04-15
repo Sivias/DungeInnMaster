@@ -60,8 +60,23 @@ body {
     padding: 16px 12px;
     gap: 14px;
   }
-  .header h1 { font-size: 1.15rem; letter-spacing: 1px; }
-  .gold-display { font-size: 0.85rem; padding: 6px 12px; }
+  /* Allow header items to wrap rather than overflow horizontally */
+  .header {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .header h1 {
+    font-size: 1.15rem;
+    letter-spacing: 1px;
+    white-space: normal;   /* override desktop nowrap */
+    flex: 1 1 auto;        /* fills space between back-btn and gold; wraps text if needed */
+    min-width: 0;
+  }
+  .gold-display {
+    font-size: 0.85rem;
+    padding: 6px 12px;
+    flex-shrink: 0;        /* never squish the gold counter */
+  }
   .section-label { font-size: 0.65rem; }
 }
 

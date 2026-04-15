@@ -10,7 +10,7 @@
   max-width: 580px;
   /* Desktop: fixed height matches the room + door-gap ::after */
   height: 448px;
-  overflow: hidden;
+  /* overflow: visible (default) — must NOT be hidden or it clips .room's outer box-shadow */
   flex-shrink: 0;
 }
 
