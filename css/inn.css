@@ -4,7 +4,17 @@
 
 #inn-page { max-width: 628px; }
 
-/* ── Room ── */
+/* ── Room wrapper ── */
+.room-wrap {
+  width: 100%;
+  max-width: 580px;
+  /* Desktop: fixed height matches the room + door-gap ::after */
+  height: 448px;
+  /* overflow: visible (default) — must NOT be hidden or it clips .room's outer box-shadow */
+  flex-shrink: 0;
+}
+
+/* ── Room (desktop — absolute-positioned top-down map) ── */
 .room {
   position: relative;
   width: 580px;
@@ -13,6 +23,7 @@
   border: 8px solid #6b4f2a;
   border-radius: 6px;
   box-shadow: 0 0 40px rgba(0,0,0,0.7), inset 0 0 80px rgba(0,0,0,0.4);
+  flex-shrink: 0;
 }
 .room::before {
   content: '';
@@ -95,7 +106,7 @@
 
 /* ── Info panel ── */
 .info-panel {
-  width: 580px;
+  width: 100%;
   min-height: 110px;
   background: rgba(20,28,45,0.9);
   border: 2px solid #2a3a4a;
@@ -144,7 +155,7 @@
 /* ── Active expedition status pills ── */
 .inn-expedition-status {
   display: flex; flex-wrap: wrap; gap: 8px;
-  width: 580px; min-height: 0;
+  width: 100%; min-height: 0;
 }
 .inn-run-pill {
   padding: 6px 16px; font-size: 0.72rem;
@@ -157,4 +168,82 @@
 .inn-run-pill:hover {
   border-color: #4ac96a;
   background: rgba(25,50,15,0.95);
+}
+
+/* ── Info panel stacks vertically on very small screens ── */
+@media (max-width: 420px) {
+  .info-panel {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .upgrade-btn { align-self: stretch; }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   MOBILE ROOM  (≤ 611 px) — declared LAST so it wins the cascade
+   over the base position:absolute rules above.
+   Swaps the fixed absolute layout for a responsive 2-column grid:
+     • Dungeon button spans the full width at the top
+     • Six location cards re-paired left-N / right-N per row
+══════════════════════════════════════════════════════════════════ */
+@media (max-width: 611px) {
+  /* Wrapper: let height be driven by content */
+  .room-wrap {
+    max-width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  /* Room: fluid width, grid layout */
+  .room {
+    width: 100%;
+    height: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  /* Dungeon button: top row, spans both columns */
+  .dungeon-btn {
+    position: static;
+    transform: none;
+    width: 100%;
+    height: auto;
+    padding: 14px 20px;
+    grid-column: 1 / -1;
+    order: 0;
+  }
+
+  /* Suppress desktop-only floorboard overlay so it doesn't paint over grid items */
+  .room::before { display: none; }
+
+  /* Location cards: in-flow grid items — position:relative so z-index applies */
+  .location {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 88px;
+  }
+
+  /* Reset desktop absolute offsets (they become relative offsets with position:relative) */
+  .left-1, .left-2, .left-3,
+  .right-1, .right-2, .right-3 { left: auto; right: auto; top: auto; bottom: auto; }
+
+  /* Re-pair: Bar|Hearth, Kitchen|Guest Room, Cellar|Stable */
+  .left-1  { order: 1; }
+  .right-1 { order: 2; }
+  .left-2  { order: 3; }
+  .right-2 { order: 4; }
+  .left-3  { order: 5; }
+  .right-3 { order: 6; }
+
+  /* Fully opaque card backgrounds on mobile */
+  .location                   { background: rgb(16,22,38); }
+  .location.lv1,
+  .location.lv2               { background: rgb(50,35,15); }
+  .location.lv3,
+  .location.lv4               { background: rgb(15,30,50); }
+  .location.lv5               { background: rgb(40,30,10); }
 }

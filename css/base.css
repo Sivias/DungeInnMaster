@@ -30,12 +30,14 @@ body {
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  gap: 8px;
 }
 .header h1 {
   color: #e0c88a;
   font-size: 1.6rem;
   letter-spacing: 2px;
   text-shadow: 0 0 18px rgba(224,200,138,0.4);
+  white-space: nowrap;
 }
 
 /* ── Gold display ── */
@@ -49,6 +51,33 @@ body {
   font-weight: bold;
   letter-spacing: 1px;
   box-shadow: 0 0 12px rgba(201,168,76,0.25);
+  white-space: nowrap;
+}
+
+/* ── Mobile typography & spacing ── */
+@media (max-width: 480px) {
+  .page {
+    padding: 16px 12px;
+    gap: 14px;
+  }
+  /* Allow header items to wrap rather than overflow horizontally */
+  .header {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .header h1 {
+    font-size: 1.15rem;
+    letter-spacing: 1px;
+    white-space: normal;   /* override desktop nowrap */
+    flex: 1 1 auto;        /* fills space between back-btn and gold; wraps text if needed */
+    min-width: 0;
+  }
+  .gold-display {
+    font-size: 0.85rem;
+    padding: 6px 12px;
+    flex-shrink: 0;        /* never squish the gold counter */
+  }
+  .section-label { font-size: 0.65rem; }
 }
 
 /* ── Event log wrapper ── */

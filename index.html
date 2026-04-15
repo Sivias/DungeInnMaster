@@ -17,11 +17,12 @@
   ══════════════════════════════════════ -->
   <div id="inn-page" class="page">
 
-    <div class="header" style="width:580px">
+    <div class="header">
       <h1>⚔️ DungeInnMaster</h1>
       <div class="gold-display">💰 <span id="gold-amount">50</span> Gold</div>
     </div>
 
+    <div class="room-wrap">
     <div class="room">
       <div class="dungeon-btn" id="dungeon-btn">
         <span class="dng-icon">⚔️</span>
@@ -33,18 +34,19 @@
       <div class="location right-1" data-id="hearth">   <span class="loc-icon">🔥</span><span class="loc-name">Hearth</span>    <span class="loc-level">Lv 0</span></div>
       <div class="location right-2" data-id="guestroom"><span class="loc-icon">🛏️</span><span class="loc-name">Guest Room</span><span class="loc-level">Lv 0</span></div>
       <div class="location right-3" data-id="stable">   <span class="loc-icon">🐴</span><span class="loc-name">Stable</span>    <span class="loc-level">Lv 0</span></div>
-    </div>
+    </div><!-- /room -->
+    </div><!-- /room-wrap -->
 
     <div class="door-label">⬇ Entrance</div>
 
     <!-- Active expedition pills -->
     <div class="inn-expedition-status" id="inn-expedition-status"></div>
 
-    <div class="info-panel" id="info-panel" style="width:580px">
+    <div class="info-panel" id="info-panel">
       <p class="welcome-msg">Welcome, Inn Keeper! Select a location to manage it, or venture into the dungeon for gold.</p>
     </div>
 
-    <div class="log-wrap" style="width:580px">
+    <div class="log-wrap">
       <button class="log-toggle" data-target="event-log">▾ expand log</button>
       <div class="event-log" id="event-log">
         <div class="log-entry">📜 Your inn awaits its first guests…</div>
