@@ -2,7 +2,7 @@
    DUNGEON.CSS — Party selection screen
 ═══════════════════════════════════════ */
 
-#dungeon-page { max-width: 800px; }
+#dungeon-page { max-width: 800px; --page-max-width: 800px; }
 
 /* ── Deploy section inner layout ── */
 #deploy-section {
@@ -132,7 +132,7 @@
   /* On narrow screens sit 12px from viewport edge;
      on wide screens track the content's left margin so the button
      never floats further left than the rest of the page elements. */
-  left: max(12px, calc((100vw - 780px) / 2 + 4px));
+  left: max(12px, calc((100vw - var(--page-max-width)) / 2 + 4px));
   z-index: 200;
   width: 44px;
   height: 44px;
