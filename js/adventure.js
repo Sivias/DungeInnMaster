@@ -404,11 +404,15 @@ function _showPauseOverlay(run) {
 
   const summaryEl = document.getElementById('pause-party-summary');
   if (summaryEl) {
-    summaryEl.innerHTML = run.party.map(m => {
-      const hpPct  = Math.max(0, Math.round((m.hp / m.maxHp) * 100));
-      const cls    = m.status === 'incapacitated' ? 'dead' : m.status === 'wounded' ? 'wounded' : '';
-      return `<span class="pause-member ${cls}">${m.cls.icon} ${m.name.split(' ')[0]} ${hpPct}%</span>`;
-    }).join('');
+    summaryEl.textContent = '';
+    run.party.forEach(m => {
+      const hpPct     = Math.max(0, Math.round((m.hp / m.maxHp) * 100));
+      const statusCls = m.status === 'incapacitated' ? 'dead' : m.status === 'wounded' ? 'wounded' : '';
+      const span      = document.createElement('span');
+      span.className  = `pause-member ${statusCls}`;
+      span.textContent = `${m.cls.icon} ${m.name.split(' ')[0]} ${hpPct}%`;
+      summaryEl.appendChild(span);
+    });
   }
 
   const infoEl = document.getElementById('pause-info');
@@ -497,7 +501,7 @@ function receiveRun(runId) {
   refreshInfoPanel();
   _updateDungeonPageIfVisible();
   refreshInnExpeditionStatus();
-  scheduleSave();
+  saveState();   // irreversible claim — bypass debounce
 }
 
 /* ── Populate and display the rest-room overlay ── */
@@ -810,21 +814,40 @@ function renderAdvParty(run) {
       // Build card once (first render or member change)
       card = document.createElement('div');
       card.dataset.memberId = m.id;
-      card.innerHTML = `
-        <div class="adv-member-icon">${m.cls.icon}</div>
-        <div class="adv-member-name">${m.name.split(' ')[0]}</div>
-        <span class="rarity-badge ${m.rarity.cls}">${m.rarity.label}</span>
-        <div class="hp-row">
-          <div class="hp-bar-bg"><div class="hp-bar-fill"></div></div>
-          <span class="hp-value"></span>
-        </div>
-        <div class="buff-timer" style="display:none">
-          <div class="buff-bar-bg"><div class="buff-bar-fill"></div></div>
-          <span class="buff-label"></span>
-        </div>
-        <button class="ability-btn" title="${m.cls.ability.desc}">
-          ✦ ${m.cls.ability.name}
-        </button>`;
+
+      const iconDiv = document.createElement('div');
+      iconDiv.className = 'adv-member-icon';
+      iconDiv.textContent = m.cls.icon;
+
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'adv-member-name';
+      nameDiv.textContent = m.name.split(' ')[0];
+
+      const raritySpan = document.createElement('span');
+      raritySpan.className = `rarity-badge ${m.rarity.cls}`;
+      raritySpan.textContent = m.rarity.label;
+
+      // Static structural markup — no persisted data, safe to use innerHTML
+      const hpRow = document.createElement('div');
+      hpRow.className = 'hp-row';
+      hpRow.innerHTML = '<div class="hp-bar-bg"><div class="hp-bar-fill"></div></div><span class="hp-value"></span>';
+
+      const buffTimerDiv = document.createElement('div');
+      buffTimerDiv.className = 'buff-timer';
+      buffTimerDiv.style.display = 'none';
+      buffTimerDiv.innerHTML = '<div class="buff-bar-bg"><div class="buff-bar-fill"></div></div><span class="buff-label"></span>';
+
+      const abilityBtn = document.createElement('button');
+      abilityBtn.className = 'ability-btn';
+      abilityBtn.title = m.cls.ability.desc;
+      abilityBtn.textContent = `✦ ${m.cls.ability.name}`;
+
+      card.appendChild(iconDiv);
+      card.appendChild(nameDiv);
+      card.appendChild(raritySpan);
+      card.appendChild(hpRow);
+      card.appendChild(buffTimerDiv);
+      card.appendChild(abilityBtn);
       // Attach click listener once — useAbility validates canUse internally
       card.querySelector('.ability-btn').addEventListener('click', () => useAbility(run.id, m.id));
       if (container.children[idx]) {

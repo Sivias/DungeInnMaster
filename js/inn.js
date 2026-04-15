@@ -48,7 +48,7 @@ function doUpgrade(id) {
   refreshLocation(id);
   refreshInfoPanel();
   addLog(`🔨 ${DEFS[id].name} upgraded to Level ${state.locs[id].level}!`, 'upgrade');
-  scheduleSave();
+  saveState();   // irreversible spend — bypass debounce
 }
 
 function selectLocation(id) {
@@ -104,7 +104,9 @@ function refreshInnExpeditionStatus() {
     }
     pill.className = pillClass;
 
-    // Build pill text
+    // Build pill text — use textContent to prevent XSS from persisted names/icons.
+    // \u00A0 is a non-breaking space, replacing the &nbsp; that innerHTML used to handle.
+    const nb = '\u00A0';
     let pillText;
     if (isPending) {
       pillText = `${run.pendingReward.icon} ${label} · Tap to claim ${run.pendingReward.gold}g`;
@@ -113,11 +115,11 @@ function refreshInnExpeditionStatus() {
         ? Math.max(0, run.returnDuration - (Date.now() - run.returnStartTime))
         : 0;
       const timeStr = _fmtMs(msLeft);
-      pillText = `🏠 ${label} F${run.floor} &nbsp;↩ ${timeStr} &nbsp;💛${alive}`;
+      pillText = `🏠 ${label} F${run.floor} ${nb}↩ ${timeStr} ${nb}💛${alive}`;
     } else {
-      pillText = `${pIcon} ${label} F${run.floor} &nbsp;💛${alive} &nbsp;💰${run.goldEarned}g`;
+      pillText = `${pIcon} ${label} F${run.floor} ${nb}💛${alive} ${nb}💰${run.goldEarned}g`;
     }
-    pill.innerHTML = pillText;
+    pill.textContent = pillText;
   });
 }
 

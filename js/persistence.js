@@ -231,10 +231,27 @@ function loadState() {
   return true;
 }
 
+/* ── Flush any pending debounced save the moment the tab is hidden or closed.
+      visibilitychange fires on tab-switch, app-switch, and most mobile cases.
+      beforeunload covers explicit close/reload on desktop browsers.
+      Named references are required so resetSave() can remove them.         ── */
+function _onVisibilityHide() {
+  if (document.visibilityState === 'hidden') saveState();
+}
+document.addEventListener('visibilitychange', _onVisibilityHide);
+window.addEventListener('beforeunload', saveState);
+
 /* ── Wipe the save and reload for a clean slate ── */
 function resetSave() {
   if (!confirm('⚠️ Reset all progress and start fresh?')) return;
+  // Remove the flush-on-unload handlers BEFORE reloading, otherwise beforeunload
+  // fires during location.reload() and immediately re-writes the deleted save.
+  window.removeEventListener('beforeunload', saveState);
+  document.removeEventListener('visibilitychange', _onVisibilityHide);
+  clearTimeout(_saveTimer);
+  _saveTimer = null;
   localStorage.removeItem(SAVE_KEY);
   location.reload();
 }
+
 

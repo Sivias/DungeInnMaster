@@ -169,6 +169,17 @@ body {
   color: #f09090;
 }
 
+/* ── Debug variant: fixed to the bottom-centre of the viewport ── */
+.debug-reset-btn {
+  position: fixed;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  opacity: 0.45;
+}
+.debug-reset-btn:hover { opacity: 1; }
+
 /* ── Section label ── */
 .section-label {
   align-self: flex-start;
