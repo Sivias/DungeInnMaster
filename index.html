@@ -132,8 +132,8 @@
         <div class="floor-progress-fill" id="floor-progress-fill" style="width:0"></div>
       </div>
       <div class="floor-progress-info">
-        <span class="floor-label">Floor 1</span>
-        <span class="floor-time-left" id="floor-time-left">5:00</span>
+        <span class="floor-label" id="floor-label">Floor 1 — Room 0/3</span>
+        <span class="floor-time-left" id="floor-time-left">0:00</span>
       </div>
     </div>
 
@@ -175,6 +175,25 @@
       </div>
       <div class="event-log" id="event-log-a">
         <div class="log-entry dungeon">🏰 Into the dungeon…</div>
+      </div>
+    </div>
+
+    <!-- Rest room overlay — shown when party clears a floor -->
+    <div class="rest-overlay hidden" id="rest-overlay">
+      <div class="rest-box">
+        <div class="rest-icon">🏕️</div>
+        <div class="rest-title">Floor <span id="rest-floor-num">1</span> Cleared!</div>
+        <div class="rest-subtitle">Your party rests at the dungeon stairs.</div>
+        <div class="rest-msg">The air grows colder below… something stirs deeper in the dark.</div>
+        <div class="rest-return-info">Return walk from here: ~<span id="rest-return-time">1:40</span></div>
+        <div class="rest-actions">
+          <button class="descend-btn" id="descend-btn" onclick="descendFloor(state.watchingRunId)">
+            ⬇ Descend to Floor <span id="rest-next-floor">2</span>
+          </button>
+          <button class="return-rest-btn" id="return-rest-btn" onclick="returnFromRest(state.watchingRunId)">
+            🏠 Return to Inn (~<span id="rest-return-time-btn">1:40</span>)
+          </button>
+        </div>
       </div>
     </div>
 

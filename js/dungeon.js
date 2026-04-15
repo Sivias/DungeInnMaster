@@ -8,10 +8,30 @@ let applicantSort     = 'default';
 let _sortBarReady     = false;
 let _applicantRosterLevel = -1;  // guest room level at last full generation
 
-/* ── Hire cost: rarity base + power × 2 ── */
+/* ── Hire cost: rarity base + power × 2  (returning survivors are always free) ── */
 function _hireCost(app) {
+  if (app.returning) return 0;
   const base = { common: 5, uncommon: 15, rare: 35, epic: 65, legendary: 110 };
   return (base[app.rarity.id] ?? 5) + app.power * 2;
+}
+
+/* ── Add run survivors back to the front of the applicant pool at zero cost ── */
+function addReturningAdventurers(survivors) {
+  const returnees = survivors.map(m => ({
+    id:        m.id,
+    name:      m.name,
+    cls:       m.cls,
+    rarity:    m.rarity,
+    power:     m.power,
+    maxHp:     m.maxHp,
+    returning: true,
+  }));
+  // Remove stale copies of these IDs first (handles multi-run edge cases)
+  applicants = applicants.filter(a => !returnees.some(r => r.id === a.id));
+  // Prepend so they appear first in the default sort
+  applicants = [...returnees, ...applicants];
+  renderApplicantGrid();
+  _updateApplicantLabel();
 }
 
 /* ── Rarity picker ── */
@@ -164,15 +184,22 @@ function renderActiveRuns() {
       `<span class="run-member-icon ${m.status==='incapacitated'?'dead':m.status==='wounded'?'wounded':''}">${m.cls.icon}</span>`
     ).join('');
 
-    const enc = run.currentEnc >= 0 ? run.encounters[run.currentEnc] : null;
-    const phaseIcons = { traveling:'🥾', returning:'🏠', done:'✅', fighting:'⚔️', discovering:'👁️', 'ability-window':'⚡' };
-    const phaseIcon = phaseIcons[run.phase] ?? '🥾';
-    const phaseText = enc && ['discovering','ability-window','fighting'].includes(run.phase)
-      ? `${enc.icon} ${enc.name}` : { traveling:'Traveling', returning:'Returning', done:'Done' }[run.phase] ?? 'Traveling';
+    const enc = run.currentEncounter;
+    const phaseIcons = { traveling:'🥾', returning:'🏠', done:'✅', resting:'🏕️' };
+    const phaseIcon  = phaseIcons[run.phase] ?? '🥾';
+    const phaseText  = enc && run.encounterActive
+      ? `${enc.icon} ${enc.name}`
+      : ({ traveling: run.encRoomsCleared >= ROOMS_PER_FLOOR
+                        ? `🏕️ F${run.floor} cleared`
+                        : `F${run.floor} · Rm ${run.encRoomsCleared + 1}/${ROOMS_PER_FLOOR}`,
+           resting:   `🏕️ F${run.floor} cleared`,
+           returning: 'Returning',
+           done:      'Done' }[run.phase] ?? `Floor ${run.floor}`);
 
-    // Elapsed mini-bar
-    const elapsed = Date.now() - run.startTime;
-    const bar = Math.min(100, (elapsed / TOTAL_RUN_MS * 100)).toFixed(0);
+    // Room-based mini-bar (return-walk progress when returning)
+    const bar = run.phase === 'returning' && run.returnDuration > 0
+      ? Math.min(100, ((Date.now() - run.returnStartTime) / run.returnDuration) * 100).toFixed(0)
+      : Math.min(100, (run.encRoomsCleared / ROOMS_PER_FLOOR) * 100).toFixed(0);
 
     card.innerHTML = `
       <div class="run-card-icons">${icons}</div>
@@ -203,14 +230,17 @@ function renderApplicantGrid() {
     sorted.sort((a, b) => a.cls.name.localeCompare(b.cls.name));
   } else if (applicantSort === 'power') {
     sorted.sort((a, b) => b.power - a.power);
+  } else {
+    // Default: returning veterans always first, then original insertion order
+    sorted.sort((a, b) => (b.returning ? 1 : 0) - (a.returning ? 1 : 0));
   }
 
   sorted.forEach(app => {
     if (partyIds.includes(app.id)) return;   // already in party — hide from list
-    const cost       = _hireCost(app);
-    const affordable = state.gold >= cost;
+    const cost       = _hireCost(app);       // 0 for returning veterans
+    const affordable = app.returning || state.gold >= cost;
     const card = document.createElement('div');
-    card.className = `applicant-card${affordable ? '' : ' unaffordable'}`;
+    card.className = `applicant-card${affordable ? '' : ' unaffordable'}${app.returning ? ' returning-veteran' : ''}`;
     const pct = Math.round((app.power / 25) * 100);
     card.innerHTML = `
       <div class="app-icon">${app.cls.icon}</div>
@@ -223,7 +253,7 @@ function renderApplicantGrid() {
         <div class="power-bar-bg"><div class="power-bar-fill" style="width:${pct}%"></div></div>
         <span class="power-value">${app.power}</span>
       </div>
-      <div class="app-cost${affordable ? '' : ' unaffordable'}">💰 ${cost}g</div>`;
+      <div class="app-cost${affordable ? '' : ' unaffordable'}">${app.returning ? '🔄 Free' : `💰 ${cost}g`}</div>`;
     card.addEventListener('click', () => toggleMember(app.id));
     // Drag from grid
     card.draggable = true;

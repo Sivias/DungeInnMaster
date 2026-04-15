@@ -79,8 +79,7 @@ function refreshInnExpeditionStatus() {
 
   state.activeRuns.forEach(run => {
     const alive = run.party.filter(m => m.status !== 'incapacitated').length;
-    const phaseIcons = { traveling:'🥾', returning:'🏠', done:'✅', fighting:'⚔️',
-                         discovering:'👁️', 'ability-window':'⚡' };
+    const phaseIcons = { traveling:'🥾', returning:'🏠', done:'✅', resting:'🏕️' };
     const pIcon = phaseIcons[run.phase] ?? '🥾';
     const label = (run.party[0]?.name.split(' ')[0] ?? 'Party') + "'s party";
 
@@ -95,7 +94,7 @@ function refreshInnExpeditionStatus() {
       el.appendChild(pill);
     }
     // Only update the text — the element itself stays in the DOM
-    pill.innerHTML = `${pIcon} ${label} &nbsp;💛${alive} &nbsp;💰${run.goldEarned}g`;
+    pill.innerHTML = `${pIcon} ${label} F${run.floor} &nbsp;💛${alive} &nbsp;💰${run.goldEarned}g`;
   });
 }
 
