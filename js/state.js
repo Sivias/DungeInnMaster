@@ -5,11 +5,11 @@
 const MAX_LVL = 5;
 const TICK_MS = 180_000;  // 3 minutes
 
-/* ── Floor timing (ms) ── */
-const TOTAL_RUN_MS           = 5 * 60 * 1000;  // 5 minute run
-const RETURN_WALK_MS         = 28 * 1000;       // 28 sec return walk at end
-const ENCOUNTER_INTERVAL_MIN = 12 * 1000;       // min 12 s between encounters
-const ENCOUNTER_INTERVAL_MAX = 20 * 1000;       // max 20 s between encounters
+/* ── Floor / encounter timing ── */
+const ROOMS_PER_FLOOR        = 3;               // encounter rooms per floor (matches renderer rooms 1-3)
+const REST_HP_RECOVERY_PCT   = 0.30;            // fraction of missing HP recovered at rest
+const ENCOUNTER_INTERVAL_MIN = 12 * 1000;       // min 12 s between room encounters
+const ENCOUNTER_INTERVAL_MAX = 20 * 1000;       // max 20 s between room encounters
 
 /* ── Ability buff duration by rarity (up to 2 min) ── */
 const ABILITY_DURATION_MS = {

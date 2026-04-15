@@ -230,6 +230,17 @@
   cursor: not-allowed;
 }
 
+/* ── Returning veteran card ── */
+.applicant-card.returning-veteran {
+  border-color: #3a7050;
+  background: rgba(10, 26, 18, 0.95);
+  box-shadow: 0 0 10px rgba(60, 180, 90, 0.15);
+}
+.applicant-card.returning-veteran:hover {
+  border-color: #5ab070;
+  box-shadow: 0 0 16px rgba(80, 200, 100, 0.25);
+}
+
 /* ── Party status text ── */
 .party-status {
   font-size: 0.9rem;

@@ -239,6 +239,45 @@ class DungeonRenderer {
     });
   }
 
+  /* ── Public: move party to a room index, then spawn an enemy there ── */
+  moveToRoomAndSpawn(roomIdx, encounter, onReady) {
+    const room = this.rooms[Math.min(roomIdx, this.rooms.length - 1)];
+    if (!room) { if (onReady) setTimeout(onReady, 100); return; }
+    this._movePartyTo(room, () => {
+      this._revealRoom(Math.min(roomIdx, this.rooms.length - 1));
+      this.enemy = {
+        wx: room.cx + 5, wy: room.cy,
+        twx: room.cx + 2.5, twy: room.cy,
+        facing: -1, encounter, alpha: 0, flash: false,
+      };
+      const fadeIn = setInterval(() => {
+        if (!this.enemy) { clearInterval(fadeIn); return; }
+        this.enemy.alpha = Math.min(1, (this.enemy.alpha || 0) + 0.12);
+        if (this.enemy.alpha >= 1) clearInterval(fadeIn);
+      }, 30);
+      this._moveTo(onReady, 1200);
+    });
+  }
+
+  /* ── Public: reset map to room 0 for a new floor ── */
+  startNewFloor(callback) {
+    this._fog0();
+    this._revealRoom(0);
+    const r0 = this.rooms[0];
+    this.enemy = null;
+    this.effects = [];
+    this.party.forEach((p, i) => {
+      if (p.status !== 'incapacitated') {
+        const pos = this._formPos(r0, i);
+        p.wx = pos.x; p.wy = pos.y;
+        p.twx = pos.x; p.twy = pos.y;
+        p.facing = 1;
+      }
+    });
+    this.camera.x = 0; this.camera.tx = 0;
+    setTimeout(() => { if (callback) callback(); }, 600);
+  }
+
   /* ── Public: spawn a roaming encounter near the party's current position ── */
   spawnRoamingEncounter(enc, onReady) {
     const c = this._centroid();

@@ -16,16 +16,22 @@ function createRun(party) {
       const maxHp = Math.floor(m.cls.baseHp * m.rarity.hpMult + m.power * 3);
       return { ...m, hp: maxHp, maxHp, status: 'active' };
     }),
-    phase:            'traveling',  // traveling | returning | done
+    phase:            'traveling',  // traveling | resting | returning | done
+    floor:            1,            // current floor number
+    roomIdx:          0,            // renderer room index (0=entry, 1-3=encounters)
+    encRoomsCleared:  0,            // encounter rooms finished on this floor
     goldEarned:       0,
     activeBuffs:      [],           // [{ memberId, type, value, expiresAt, label }]
     abilitiesUsed:    new Set(),
     startTime:        Date.now(),
+    floorStartTime:   Date.now(),
+    returnStartTime:  0,
+    returnDuration:   0,
     encounterActive:  false,
-    encounterCount:   0,            // total encounters triggered
-    defeatedCount:    0,            // successfully cleared
+    defeatedCount:    0,            // total enemies slain across all floors
     currentEncounter: null,
-    timers:           [],
+    timers:           [],           // encounter-loop timeouts (NOT the UI ticker)
+    uiTickId:         null,         // interval for inn pill refreshes
     renderer:         new DungeonRenderer(),
   };
   run.renderer.setup(run.party);
@@ -48,60 +54,45 @@ function startRun(party) {
 ══════════════════════════════ */
 
 function _scheduleRunTimeline(run) {
-  const T = TOTAL_RUN_MS;
-
-  // Visual room progression — party slowly advances through the dungeon
-  run.timers.push(setTimeout(() => _advanceParty(run, 1), T * 0.20));  // ~60 s
-  run.timers.push(setTimeout(() => _advanceParty(run, 2), T * 0.45));  // ~135 s
-  run.timers.push(setTimeout(() => _advanceParty(run, 3), T * 0.70));  // ~210 s
-
-  // Begin return walk
-  run.timers.push(setTimeout(() => { if (run.phase !== 'done') _beginReturn(run); }, T * 0.91));
-
-  // Victory
-  run.timers.push(setTimeout(() => { if (run.phase !== 'done') _endRun(run, 'victory'); }, T));
-
-  // Start encounter loop (first encounter after a short intro walk)
-  const firstDelay = 8000 + Math.random() * 5000;  // 8–13 s
+  // Start encounter loop after a short intro walk (8–13 s)
+  const firstDelay = 8000 + Math.random() * 5000;
   run.timers.push(setTimeout(() => _runEncounterLoop(run), firstDelay));
 
-  // Sub-second UI ticker
-  const uiTick = setInterval(() => {
-    if (run.phase === 'done') { clearInterval(uiTick); return; }
-    _updateAdventureUIIfWatching(run);
+  // Separate ticker for inn-pill refreshes (not in run.timers so _cancelRunTimers won't kill it)
+  run.uiTickId = setInterval(() => {
+    if (run.phase === 'done') { clearInterval(run.uiTickId); run.uiTickId = null; return; }
     refreshInnExpeditionStatus();
   }, 500);
-  run.timers.push(uiTick);
-}
-
-/* ── Silently walk party to next room for visual depth ── */
-function _advanceParty(run, roomIdx) {
-  if (run.phase === 'done' || run.phase === 'returning') return;
-  run.renderer.advanceToRoom(roomIdx, null);
 }
 
 /* ── Recursive encounter loop: fires every 12–20 s ── */
 function _runEncounterLoop(run) {
-  if (run.phase === 'done' || run.phase === 'returning') return;
-  if (!run.encounterActive) _triggerRoamingEncounter(run);
-  const delay = ENCOUNTER_INTERVAL_MIN + Math.random() * (ENCOUNTER_INTERVAL_MAX - ENCOUNTER_INTERVAL_MIN);
-  const tid = setTimeout(() => _runEncounterLoop(run), delay);
-  run.timers.push(tid);
+  if (run.phase === 'done' || run.phase === 'returning' || run.phase === 'resting') return;
+  if (run.encounterActive) return;
+
+  // All rooms on this floor cleared → rest at the stairs
+  if (run.encRoomsCleared >= ROOMS_PER_FLOOR) {
+    _enterRestRoom(run);
+    return;
+  }
+
+  _triggerRoomEncounter(run);
 }
 
-/* ── Spawn an encounter in-place near the party ── */
-function _triggerRoamingEncounter(run) {
-  if (run.phase === 'done' || run.phase === 'returning' || run.encounterActive) return;
+/* ── Move party to the next room, then spawn the encounter there ── */
+function _triggerRoomEncounter(run) {
+  if (run.phase === 'done' || run.phase !== 'traveling' || run.encounterActive) return;
   run.encounterActive = true;
-  run.encounterCount++;
+  run.roomIdx++;          // advance to next encounter room (1, 2, or 3)
+
   const enc = _pickEncounter(run);
   run.currentEncounter = enc;
 
-  addLog(`👁️ [${_partyLabel(run)}] ${enc.icon} ${enc.name}!`, 'dungeon');
+  addLog(`👁️ [${_partyLabel(run)}] Room ${run.roomIdx}… ${enc.icon} ${enc.name}!`, 'dungeon');
 
-  run.renderer.spawnRoamingEncounter(enc, () => {
+  // Move party into the room, then spawn enemy
+  run.renderer.moveToRoomAndSpawn(run.roomIdx, enc, () => {
     if (run.phase === 'done') { run.encounterActive = false; return; }
-    // Brief pause after enemy appears before the fight
     const tid = setTimeout(() => _autoFightRoaming(run, enc), 1200 + Math.random() * 800);
     run.timers.push(tid);
     _updateAdventureUIIfWatching(run);
@@ -298,19 +289,20 @@ function _executeTurn(run, enc, shieldOn, cs, turns, idx) {
 function _resolveFightRoaming(run, enc, success, shieldOn, dmgApplied = false) {
   if (run.phase === 'done') { run.encounterActive = false; return; }
 
+  const floorMult = 1 + (run.floor - 1) * 0.5;   // +50% gold per extra floor
+
   if (success) {
-    run.goldEarned += enc.reward;
+    const reward = Math.round(enc.reward * floorMult);
+    run.goldEarned += reward;
     run.defeatedCount++;
-    addLog(`⚔️ [${_partyLabel(run)}] ${enc.name} defeated! +${enc.reward}g`, 'gold');
+    addLog(`⚔️ [${_partyLabel(run)}] ${enc.name} defeated! +${reward}g`, 'gold');
   } else {
-    const partial = Math.floor(enc.reward * 0.4);
+    const partial = Math.floor(enc.reward * 0.4 * floorMult);
     run.goldEarned += partial;
     if (dmgApplied) {
-      // Damage was already applied turn-by-turn; just report fallen members
       const fallen = run.party.filter(m => m.status === 'incapacitated').map(m => m.name.split(' ')[0]);
       addLog(`💀 The party is driven back by ${enc.name}!${fallen.length ? ` ${fallen.join(' & ')} fell!` : ''} +${partial}g`, 'dungeon');
     } else {
-      // Legacy path (no turn system active)
       const active = run.party.filter(m => m.status !== 'incapacitated');
       const dmgEach = Math.floor(shieldOn ? (enc.damage/active.length)*0.5 : enc.damage/active.length);
       const fallen = [];
@@ -327,24 +319,34 @@ function _resolveFightRoaming(run, enc, success, shieldOn, dmgApplied = false) {
   run.renderer.despawnEnemy(null);
   run.encounterActive = false;
   run.currentEncounter = null;
+  run.encRoomsCleared++;   // count this room regardless of win/loss
 
   if (run.party.every(m => m.status === 'incapacitated')) {
     _cancelRunTimers(run);
     _endRun(run, 'wipe');
     return;
   }
+
+  // Short delay after the final room → rest prompt; longer delay between regular rooms
+  const delay = run.encRoomsCleared >= ROOMS_PER_FLOOR
+    ? 1500 + Math.random() * 1000   // ~1.5–2.5 s → show rest overlay quickly
+    : ENCOUNTER_INTERVAL_MIN + Math.random() * (ENCOUNTER_INTERVAL_MAX - ENCOUNTER_INTERVAL_MIN);
+  const tid = setTimeout(() => _runEncounterLoop(run), delay);
+  run.timers.push(tid);
+
   _updateAdventureUIIfWatching(run);
   refreshInnExpeditionStatus();
 }
 
-/* ── Weighted encounter selection — scales with party power & run progress ── */
+/* ── Weighted encounter selection — scales with floor number & room position ── */
 function _pickEncounter(run) {
-  const progress   = Math.min(1, (Date.now() - run.startTime) / TOTAL_RUN_MS);
-  const activePow  = run.party.filter(m => m.status !== 'incapacitated').reduce((s,m) => s+m.power, 0);
-  const innBonus   = Math.floor(Object.values(state.locs).reduce((s,l)=>s+l.level,0) * 0.4);
-  const powerBonus = Math.floor(activePow / 5);   // solo common ≈ 0, full legendary ≈ 17
-  const maxDiff    = Math.round(3 + progress * 13) + innBonus + powerBonus;
-  const minDiff    = Math.max(1, maxDiff - 9);
+  const roomProgress = run.roomIdx / ROOMS_PER_FLOOR;   // 0.33 → 0.67 → 1.0
+  const floorBonus   = (run.floor - 1) * 10;            // +10 difficulty per extra floor
+  const activePow    = run.party.filter(m => m.status !== 'incapacitated').reduce((s,m) => s+m.power, 0);
+  const innBonus     = Math.floor(Object.values(state.locs).reduce((s,l)=>s+l.level,0) * 0.4);
+  const powerBonus   = Math.floor(activePow / 5);
+  const maxDiff      = Math.round(3 + roomProgress * 13 + floorBonus) + innBonus + powerBonus;
+  const minDiff      = Math.max(1, maxDiff - 9);
   let pool = ENCOUNTERS.filter(e => e.difficulty >= minDiff && e.difficulty <= maxDiff);
   if (!pool.length) pool = ENCOUNTERS.filter(e => e.difficulty <= maxDiff + 3);
   if (!pool.length) pool = ENCOUNTERS;
@@ -361,22 +363,118 @@ function _beginReturn(run) {
   refreshInnExpeditionStatus();
 }
 
+/* ── Party reaches the last room — rest, recover HP, then offer choice ── */
+function _enterRestRoom(run) {
+  if (run.phase !== 'traveling') return;
+  run.phase = 'resting';
+
+  // Lock the return duration NOW (33% of active dungeon time) so waiting on this
+  // overlay never inflates it — reused by _doReturnFromRest and the overlay display.
+  const elapsedMs = Date.now() - run.startTime;
+  run.returnDuration = Math.max(30_000, Math.round(elapsedMs * 0.33));
+
+  // Partial HP recovery at rest
+  const recovered = [];
+  run.party.forEach(m => {
+    if (m.status !== 'incapacitated') {
+      const heal = Math.floor((m.maxHp - m.hp) * REST_HP_RECOVERY_PCT);
+      if (heal > 0) {
+        m.hp = Math.min(m.maxHp, m.hp + heal);
+        if (m.hp >= m.maxHp * 0.35) m.status = m.hp < m.maxHp * 0.55 ? 'wounded' : 'active';
+        recovered.push(`${m.name.split(' ')[0]} +${heal}HP`);
+      }
+    }
+  });
+  run.renderer.updatePartyStatus(run.party);
+
+  const healMsg = recovered.length ? ` Rest: ${recovered.join(', ')}.` : '';
+  addLog(`🏕️ [${_partyLabel(run)}] Floor ${run.floor} cleared!${healMsg}`, 'dungeon');
+
+  if (state.watchingRunId === run.id) _showRestOverlay(run);
+  _updateAdventureUIIfWatching(run);
+  refreshInnExpeditionStatus();
+}
+
+/* ── Populate and display the rest-room overlay ── */
+function _showRestOverlay(run) {
+  const overlay = document.getElementById('rest-overlay');
+  if (!overlay || state.watchingRunId !== run.id) return;
+
+  const el = id => document.getElementById(id);
+  if (el('rest-floor-num'))      el('rest-floor-num').textContent      = run.floor;
+  if (el('rest-next-floor'))     el('rest-next-floor').textContent     = run.floor + 1;
+
+  // Use the duration locked in _enterRestRoom — never recalculate from Date.now()
+  const fmtReturn = _fmtMs(run.returnDuration);
+  if (el('rest-return-time'))     el('rest-return-time').textContent     = fmtReturn;
+  if (el('rest-return-time-btn')) el('rest-return-time-btn').textContent = fmtReturn;
+
+  overlay.classList.remove('hidden');
+}
+
+/* ── Player chooses to descend to the next floor ── */
+function descendFloor(runId) {
+  const run = state.activeRuns.find(r => r.id === runId);
+  if (!run || run.phase !== 'resting') return;
+
+  document.getElementById('rest-overlay')?.classList.add('hidden');
+
+  run.floor++;
+  run.roomIdx         = 0;
+  run.encRoomsCleared = 0;
+  run.floorStartTime  = Date.now();
+  run.phase           = 'traveling';
+
+  addLog(`⬇️ [${_partyLabel(run)}] Descending to Floor ${run.floor}!`, 'dungeon');
+
+  run.renderer.startNewFloor(() => {
+    if (run.phase !== 'traveling') return;
+    const delay = 6000 + Math.random() * 4000;
+    const tid = setTimeout(() => _runEncounterLoop(run), delay);
+    run.timers.push(tid);
+    _updateAdventureUIIfWatching(run);
+  });
+
+  _updateAdventureUIIfWatching(run);
+  refreshInnExpeditionStatus();
+}
+
+/* ── Player chooses to return to the inn from the rest room ── */
+function _doReturnFromRest(runId) {
+  const run = state.activeRuns.find(r => r.id === runId);
+  if (!run || run.phase !== 'resting') return;
+
+  document.getElementById('rest-overlay')?.classList.add('hidden');
+  _cancelRunTimers(run);  // clear any stray timers
+
+  // returnDuration was locked when the rest overlay first appeared — use it as-is
+  run.returnStartTime = Date.now();
+
+  _beginReturn(run);   // sets phase to 'returning', plays retreat animation
+
+  const tid = setTimeout(() => _endRun(run, 'victory'), run.returnDuration);
+  run.timers.push(tid);
+}
+
 /* ── Finalize run ── */
 function _endRun(run, result) {
   if (run.phase === 'done') return;
   run.phase = 'done';
   _cancelRunTimers(run);
+  if (run.uiTickId) { clearInterval(run.uiTickId); run.uiTickId = null; }
+  document.getElementById('rest-overlay')?.classList.add('hidden');
 
   let gold = run.goldEarned;
   let icon, title, msg;
 
   if (result === 'victory') {
     const innBonus = Object.values(state.locs).reduce((s,l)=>s+l.level,0);
-    const bonus = Math.floor(12 + innBonus*2);
+    const bonus = Math.floor(12 + run.floor * 8 + innBonus * 2);
     gold += bonus;
     icon='🏆'; title='Dungeon Cleared!';
-    msg=`Party triumphed! ${run.defeatedCount} enemies slain. Earned ${gold} gold (includes +${bonus} completion bonus).`;
-    addLog(`🏆 [${_partyLabel(run)}] Cleared! ${run.defeatedCount} slain · ${gold}g total.`,'gold');
+    const floorWord = run.floor > 1 ? `${run.floor} floors` : '1 floor';
+    msg=`Party returned from ${floorWord}! ${run.defeatedCount} enemies slain. Earned ${gold} gold (includes +${bonus} completion bonus).`;
+    addLog(`🏆 [${_partyLabel(run)}] Cleared ${floorWord}! ${run.defeatedCount} slain · ${gold}g total.`,'gold');
   } else if (result === 'wipe') {
     gold=0; icon='💀'; title='Party Wiped!';
     msg='Every adventurer fell. No gold recovered.';
@@ -405,6 +503,13 @@ function _endRun(run, result) {
     if (idx !== -1) state.activeRuns.splice(idx, 1);
     run.renderer.hide();
     if (state.watchingRunId === run.id) state.watchingRunId = null;
+
+    // Return survivors to the adventurer pool (free of charge) after victory/recall
+    if (result !== 'wipe') {
+      const survivors = run.party.filter(m => m.status !== 'incapacitated');
+      if (survivors.length > 0) addReturningAdventurers(survivors);
+    }
+
     _updateDungeonPageIfVisible();
     refreshInnExpeditionStatus();
   }, 5000);
@@ -425,6 +530,12 @@ function watchRun(runId) {
   run.renderer.attach(document.getElementById('dungeon-canvas'));
   showPage('adventure-page');
   document.getElementById('outcome-overlay').classList.add('hidden');
+  // Show rest overlay if this run is waiting at the stairs
+  const restOverlay = document.getElementById('rest-overlay');
+  if (restOverlay) {
+    if (run.phase === 'resting') _showRestOverlay(run);
+    else restOverlay.classList.add('hidden');
+  }
   updateAdventureUI(run);
 }
 
@@ -434,6 +545,7 @@ function stopWatching() {
     if (run) run.renderer.detach();
   }
   state.watchingRunId = null;
+  document.getElementById('rest-overlay')?.classList.add('hidden');
   showPage('inn-page');
   refreshInfoPanel();
   refreshInnExpeditionStatus();
@@ -442,6 +554,8 @@ function stopWatching() {
 function recallParty() {
   const run = state.activeRuns.find(r => r.id === state.watchingRunId);
   if (!run || run.phase === 'done' || run.phase === 'returning') return;
+  // At the rest room: treat recall as "Return to Inn" (full gold)
+  if (run.phase === 'resting') { _doReturnFromRest(run.id); return; }
   _cancelRunTimers(run);
   run.renderer.onRetreat(null);
   _endRun(run, 'recall');
@@ -507,13 +621,39 @@ function updateAdventureUI(run) {
 
   const now = Date.now();
 
-  // Floor progress
-  const elapsed = now - run.startTime;
-  const pct = Math.min(100, (elapsed / TOTAL_RUN_MS) * 100);
+  // ── Floor progress bar & labels ──────────────────────────────────────────
+  let pct = 0;
+  let floorLabelText = '';
+  let timeText = '';
+
+  if (run.phase === 'returning') {
+    // Show return walk progress
+    if (run.returnDuration > 0) {
+      pct = Math.min(100, ((now - run.returnStartTime) / run.returnDuration) * 100);
+      const msLeft = Math.max(0, run.returnDuration - (now - run.returnStartTime));
+      timeText = '↩ ' + _fmtMs(msLeft);
+    } else {
+      pct = 100;
+      timeText = '↩ …';
+    }
+    floorLabelText = `Floor ${run.floor} — Returning`;
+  } else if (run.phase === 'resting') {
+    pct = 100;
+    floorLabelText = `Floor ${run.floor} Complete! 🏕️`;
+    timeText = '🏕️ Rest';
+  } else {
+    // Traveling: show room progress on this floor
+    pct = Math.min(100, (run.encRoomsCleared / ROOMS_PER_FLOOR) * 100);
+    floorLabelText = `Floor ${run.floor} — Room ${run.encRoomsCleared}/${ROOMS_PER_FLOOR}`;
+    timeText = _fmtMs(now - run.floorStartTime);
+  }
+
   const fillEl = document.getElementById('floor-progress-fill');
   if (fillEl) fillEl.style.width = pct.toFixed(1) + '%';
+  const floorLabelEl = document.getElementById('floor-label');
+  if (floorLabelEl) floorLabelEl.textContent = floorLabelText;
   const timeEl = document.getElementById('floor-time-left');
-  if (timeEl) timeEl.textContent = _fmtMs(Math.max(0, TOTAL_RUN_MS - elapsed));
+  if (timeEl) timeEl.textContent = timeText;
 
   // Encounter counter
   const cntEl = document.getElementById('enc-count');
@@ -527,7 +667,7 @@ function updateAdventureUI(run) {
     document.getElementById('enc-diff').textContent = 'Difficulty: '+'★'.repeat(Math.ceil(enc.difficulty/5));
     document.getElementById('enc-desc').textContent = enc.desc;
   } else {
-    const icons = { returning:'🏠', done:'✅', traveling:'🗺️' };
+    const icons = { returning:'🏠', done:'✅', traveling:'🗺️', resting:'🏕️' };
     document.getElementById('enc-icon').textContent = icons[run.phase] ?? '🗺️';
     document.getElementById('enc-name').textContent = _phaseTitle(run);
     document.getElementById('enc-diff').textContent = '';
@@ -538,7 +678,9 @@ function updateAdventureUI(run) {
   document.getElementById('run-gold-earned').textContent = run.goldEarned;
   document.getElementById('adv-status').textContent = _phaseDesc(run);
   const recallBtn = document.getElementById('recall-btn');
-  if (recallBtn) recallBtn.disabled = run.phase === 'done' || run.phase === 'returning';
+  if (recallBtn) {
+    recallBtn.disabled = run.phase === 'done' || run.phase === 'returning' || run.phase === 'resting';
+  }
 }
 
 function renderAdvParty(run) {
@@ -734,15 +876,17 @@ function _partyLabel(run) {
 }
 
 function _phaseTitle(run) {
+  if (run.phase === 'resting')   return `Floor ${run.floor} Cleared — Resting`;
   if (run.phase === 'returning') return 'Returning to Inn';
   if (run.phase === 'done')      return 'Expedition Complete';
-  return 'Advancing…';
+  return `Floor ${run.floor} — Room ${run.roomIdx}/${ROOMS_PER_FLOOR}`;
 }
 
 function _phaseDesc(run) {
   switch (run.phase) {
     case 'traveling':  return '🥾 Your party pushes deeper into the dungeon…';
-    case 'returning':  return '🏠 Your party returns victorious…';
+    case 'resting':    return '🏕️ The party rests at the dungeon stairs. Descend or return to the inn?';
+    case 'returning':  return '🏠 Your party makes the long walk back…';
     case 'done':       return '✅ Expedition complete.';
     default:           return '';
   }
