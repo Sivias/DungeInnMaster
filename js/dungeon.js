@@ -5,6 +5,7 @@
 let applicants = [];
 let partyIds   = [];
 let applicantSort     = 'default';
+let applicantSortReversed = false;
 let _sortBarReady     = false;
 let _applicantRosterLevel = -1;  // guest room level at last full generation
 
@@ -65,14 +66,39 @@ function _initSortBar() {
   if (_sortBarReady) return;
   _sortBarReady = true;
   const bar = document.getElementById('sort-bar');
-  if (!bar) return;
-  bar.addEventListener('click', e => {
-    const btn = e.target.closest('.sort-btn');
-    if (!btn) return;
-    applicantSort = btn.dataset.sort;
-    bar.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b === btn));
-    renderApplicantGrid();
-  });
+  if (bar) {
+    bar.addEventListener('click', e => {
+      const btn = e.target.closest('.sort-btn');
+      if (!btn) return;
+      const newSort = btn.dataset.sort;
+      if (newSort === applicantSort) {
+        applicantSortReversed = !applicantSortReversed;
+      } else {
+        applicantSort = newSort;
+        applicantSortReversed = false;
+      }
+      bar.querySelectorAll('.sort-btn').forEach(b => {
+        b.classList.toggle('active', b === btn && !applicantSortReversed);
+        b.classList.toggle('active-reversed', b === btn && applicantSortReversed);
+      });
+      renderApplicantGrid();
+    });
+  }
+
+  // One-time: allow dropping party members back into the applicant grid to remove them
+  const grid = document.getElementById('applicant-grid');
+  if (grid) {
+    grid.addEventListener('dragover',  e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+    grid.addEventListener('dragenter', e => { e.preventDefault(); grid.classList.add('drag-over-grid'); });
+    grid.addEventListener('dragleave', e => { if (!grid.contains(e.relatedTarget)) grid.classList.remove('drag-over-grid'); });
+    grid.addEventListener('drop', e => {
+      e.preventDefault();
+      grid.classList.remove('drag-over-grid');
+      const draggedId = e.dataTransfer.getData('text/plain');
+      if (draggedId && partyIds.includes(draggedId)) toggleMember(draggedId);
+    });
+  }
+
 }
 
 /* ── Full dungeon page refresh ── */
@@ -131,31 +157,45 @@ function _updateApplicantLabel() {
   lbl.textContent = `Adventurers seeking work — Guest Room Lv ${_applicantRosterLevel} (${available} available)`;
 }
 
-/* ── Re-roll cost scales with Guest Room level ── */
-function _rerollCost() {
-  return 10 + state.locs.guestroom.level * 5;
+/* ── Re-roll cost: per new adventurer generated, scales with Guest Room level ── */
+function _rerollCostPer() {
+  return 2 + state.locs.guestroom.level;
 }
 
-/* ── Spend gold to refresh the adventurer roster ── */
+/* ── How many adventurers would a re-roll generate right now ── */
+function _rerollNewCount() {
+  const guestLv   = state.locs.guestroom.level;
+  const targetTotal = 4 + guestLv * 2;
+  // Keep returning veterans and any currently-hired party members
+  const kept = applicants.filter(a => a.returning || partyIds.includes(a.id));
+  return Math.max(0, targetTotal - kept.length);
+}
+
+/* ── Spend gold to refresh non-returning applicants ── */
 function rerollApplicants() {
-  const rollCost = _rerollCost();
-  // Hired party members will be refunded — account for that in the affordability check
-  const partyRefund = partyIds.reduce((s, id) => {
-    const app = applicants.find(a => a.id === id);
-    return s + (app ? _hireCost(app) : 0);
-  }, 0);
-  if (state.gold + partyRefund < rollCost) {
-    addLog(`❌ Not enough gold to re-roll! Need ${rollCost}g.`, 'dungeon');
+  const newCount = _rerollNewCount();
+  const rollCost = newCount * _rerollCostPer();
+
+  if (newCount === 0) {
+    addLog(`🎲 No new adventurers needed — your returning veterans fill the roster!`, 'dungeon');
     return;
   }
-  // Refund party, then charge re-roll fee in one step
-  setGold(state.gold + partyRefund - rollCost);
-  partyIds = [];
-  _generateApplicants();
+  if (state.gold < rollCost) {
+    addLog(`❌ Not enough gold to re-roll! Need ${rollCost}g (${newCount} × ${_rerollCostPer()}g).`, 'dungeon');
+    return;
+  }
+
+  setGold(state.gold - rollCost);
+
+  // Keep returning veterans and hired party members; replace everyone else
+  const guestLv = state.locs.guestroom.level;
+  applicants = applicants.filter(a => a.returning || partyIds.includes(a.id));
+  for (let i = 0; i < newCount; i++) applicants.push(generateApplicant(guestLv));
+
   renderPartySlots();
   renderApplicantGrid();
   updateVentureBtn();
-  addLog(`🎲 A new batch of adventurers arrives at the inn. (−${rollCost}g)`, 'gold');
+  addLog(`🎲 ${newCount} new adventurer${newCount > 1 ? 's' : ''} arrive${newCount === 1 ? 's' : ''} at the inn. (−${rollCost}g)`, 'gold');
   scheduleSave();
 }
 
@@ -239,8 +279,8 @@ function renderApplicantGrid() {
 
   // Sort a shallow copy — never mutate the source array
   const sorted = [...applicants];
-  if (applicantSort === 'rarity') {
-    sorted.sort((a, b) => RARITIES.findIndex(r => r.id === b.rarity.id) - RARITIES.findIndex(r => r.id === a.rarity.id));
+  if (applicantSort === 'cost') {
+    sorted.sort((a, b) => _hireCost(a) - _hireCost(b));
   } else if (applicantSort === 'class') {
     sorted.sort((a, b) => a.cls.name.localeCompare(b.cls.name));
   } else if (applicantSort === 'power') {
@@ -249,6 +289,7 @@ function renderApplicantGrid() {
     // Default: returning veterans always first, then original insertion order
     sorted.sort((a, b) => (b.returning ? 1 : 0) - (a.returning ? 1 : 0));
   }
+  if (applicantSortReversed) sorted.reverse();
 
   sorted.forEach(app => {
     if (partyIds.includes(app.id)) return;   // already in party — hide from list
@@ -444,19 +485,13 @@ function updateVentureBtn() {
 }
 
 /* ── Keep re-roll button label and disabled state in sync ── */
-function _partyRefundTotal() {
-  return partyIds.reduce((sum, id) => {
-    const app = applicants.find(a => a.id === id);
-    return sum + (app ? _hireCost(app) : 0);
-  }, 0);
-}
 function _updateRerollBtn() {
   const btn = document.getElementById('reroll-btn');
   if (!btn) return;
-  const cost = _rerollCost();
-  const affordableGold = state.gold + _partyRefundTotal();
-  btn.textContent = `🎲 Re-roll (${cost}g)`;
-  btn.disabled = affordableGold < cost;
+  const newCount = _rerollNewCount();
+  const cost     = newCount * _rerollCostPer();
+  btn.textContent = newCount > 0 ? `🎲 Re-roll ${newCount} (${cost}g)` : `🎲 Re-roll (full)`;
+  btn.disabled = newCount === 0 ? false : state.gold < cost;
 }
 
 /* ── Get assembled party ── */

@@ -108,11 +108,22 @@
   color: #c9a84c;
   background: rgba(50,38,8,0.7);
 }
+.sort-btn.active-reversed {
+  border-color: #7ab3cc;
+  color: #7ab3cc;
+  background: rgba(8,28,50,0.7);
+}
 
 /* ── Drag and drop ── */
 .applicant-card         { cursor: grab; }
 .applicant-card:active  { cursor: grabbing; }
 .applicant-card.dragging { opacity: 0.3; transform: scale(0.96); }
+
+.applicant-grid.drag-over-grid {
+  outline: 2px dashed #7ab3cc;
+  outline-offset: -4px;
+  background: rgba(8,28,50,0.25);
+}
 
 .party-slot.filled        { cursor: grab; }
 .party-slot.filled:active { cursor: grabbing; }

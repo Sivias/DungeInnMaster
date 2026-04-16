@@ -23,6 +23,7 @@ function createRun(party) {
     goldEarned:       0,
     activeBuffs:      [],
     abilitiesUsed:    new Set(),
+    restAbilitiesUsed: new Set(),
     startTime:        Date.now(),
     floorStartTime:   Date.now(),
     returnStartTime:  0,
@@ -518,7 +519,133 @@ function _showRestOverlay(run) {
   if (el('rest-return-time'))     el('rest-return-time').textContent     = fmtReturn;
   if (el('rest-return-time-btn')) el('rest-return-time-btn').textContent = fmtReturn;
 
+  // ── Party summary ──────────────────────────────────────────────────────────
+  const summaryEl = el('rest-party-summary');
+  if (summaryEl) {
+    summaryEl.innerHTML = '';
+    run.party.forEach(m => {
+      const hpPct    = Math.max(0, Math.round((m.hp / m.maxHp) * 100));
+      const hpColor  = hpPct > 55 ? '#4ac96a' : hpPct > 28 ? '#e9c84a' : '#e94560';
+      const incap    = m.status === 'incapacitated';
+      const wounded  = m.status === 'wounded';
+      const rab      = m.cls.restAbility;
+      const restUsed = run.restAbilitiesUsed.has(m.id);
+      const canRest  = rab && !restUsed && !incap;
+
+      const card = document.createElement('div');
+      card.className = `rest-member-card${incap ? ' rest-member-incap' : wounded ? ' rest-member-wounded' : ''}`;
+
+      card.innerHTML = `
+        <div class="rest-member-icon">${m.cls.icon}</div>
+        <div class="rest-member-info">
+          <div class="rest-member-name">${m.name.split(' ')[0]}</div>
+          <div class="rest-hp-row">
+            <div class="rest-hp-bg"><div class="rest-hp-fill" style="width:${hpPct}%;background:${hpColor}"></div></div>
+            <span class="rest-hp-val">${incap ? '💀' : `${m.hp}/${m.maxHp}`}</span>
+          </div>
+          ${canRest
+            ? `<button class="rest-ability-btn" data-tooltip="${rab.flavor}">${rab.name}</button>`
+            : rab && restUsed
+              ? `<span class="rest-ability-used">${rab.name} (used)</span>`
+              : rab && incap
+                ? `<span class="rest-ability-used">${rab.name}</span>`
+                : ''}
+        </div>`;
+
+      if (canRest) {
+        card.querySelector('.rest-ability-btn').addEventListener('click', () => {
+          useRestAbility(run.id, m.id);
+        });
+      }
+      summaryEl.appendChild(card);
+    });
+  }
+
   overlay.classList.remove('hidden');
+}
+
+/* ── Use a rest ability — only during the resting phase, once per run ── */
+function useRestAbility(runId, memberId) {
+  const run = state.activeRuns.find(r => r.id === runId);
+  if (!run || run.phase !== 'resting') return;
+  if (run.restAbilitiesUsed.has(memberId)) return;
+
+  const m = run.party.find(p => p.id === memberId);
+  if (!m || m.status === 'incapacitated') return;
+
+  const rab  = m.cls.restAbility;
+  if (!rab) return;
+
+  run.restAbilitiesUsed.add(memberId);
+
+  const who  = m.name.split(' ')[0];
+  let result = '';
+
+  switch (rab.type) {
+    case 'healAll': {
+      const healed = [];
+      run.party.forEach(p => {
+        if (p.status !== 'incapacitated') {
+          const gain = Math.min(rab.value, p.maxHp - p.hp);
+          if (gain > 0) { p.hp += gain; if (p.hp >= p.maxHp * 0.55) p.status = 'active'; else if (p.hp >= p.maxHp * 0.35) p.status = 'wounded'; healed.push(`${p.name.split(' ')[0]} +${gain}`); }
+        }
+      });
+      result = healed.length ? `Each ally is mended — ${healed.join(', ')}.` : 'Everyone is already at full health.';
+      break;
+    }
+    case 'healLowest': {
+      const target = [...run.party].filter(p => p.status !== 'incapacitated').sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))[0];
+      if (target) {
+        const gain = Math.min(rab.value, target.maxHp - target.hp);
+        target.hp += gain;
+        if (target.hp >= target.maxHp * 0.55) target.status = 'active'; else if (target.hp >= target.maxHp * 0.35) target.status = 'wounded';
+        result = `${target.name.split(' ')[0]} recovers ${gain} HP.`;
+      }
+      break;
+    }
+    case 'healSelf': {
+      const gain = Math.min(rab.value, m.maxHp - m.hp);
+      m.hp += gain;
+      if (m.hp >= m.maxHp * 0.55) m.status = 'active'; else if (m.hp >= m.maxHp * 0.35) m.status = 'wounded';
+      result = `${who} recovers ${gain} HP.`;
+      break;
+    }
+    case 'runBoost': {
+      const expiresAt = run.startTime + 99 * 60 * 1000;  // effectively permanent for the run
+      run.activeBuffs.push({ memberId, type: 'runBoost', value: rab.value, expiresAt, label: rab.name });
+      result = `The whole party gains +${rab.value} power for the rest of the run.`;
+      break;
+    }
+    case 'gainGold': {
+      setGold(state.gold + rab.value);
+      result = `Found ${rab.value}g tucked away in the dungeon cracks.`;
+      break;
+    }
+    case 'soulSiphon': {
+      // Warlock sacrifices own HP to heal lowest ally
+      const target = [...run.party].filter(p => p.id !== memberId && p.status !== 'incapacitated').sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))[0];
+      const dmg = Math.min(rab.selfDmg ?? 15, m.hp - 1);
+      m.hp = Math.max(1, m.hp - dmg);
+      if (m.hp < m.maxHp * 0.35) m.status = 'wounded';
+      if (target) {
+        const gain = Math.min(rab.value, target.maxHp - target.hp);
+        target.hp += gain;
+        if (target.hp >= target.maxHp * 0.55) target.status = 'active'; else if (target.hp >= target.maxHp * 0.35) target.status = 'wounded';
+        result = `${who} loses ${dmg} HP — ${target.name.split(' ')[0]} gains ${gain} HP.`;
+      } else {
+        result = `${who} bleeds into the dark… but there is no ally to receive the gift.`;
+      }
+      break;
+    }
+  }
+
+  const flavorLine = `${who} ${rab.flavor}`;
+  addLog(`🏕️ ${who} uses ${rab.name}! ${flavorLine} ${result}`, 'dungeon');
+
+  run.renderer.updatePartyStatus(run.party);
+  scheduleSave();
+  _showRestOverlay(run);   // re-render cards to reflect new HP / used state
+  updateAdventureUI(run);
 }
 
 /* ── Player chooses to descend to the next floor ── */

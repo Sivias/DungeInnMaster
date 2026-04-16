@@ -37,6 +37,16 @@ function saveState() {
   }
 }
 
+/* ── Re-link cls/rarity on a member/applicant to the live CLASSES & RARITIES data.
+   JSON round-trips strip any properties added to those arrays after the save was made. ── */
+function _relinkMember(m) {
+  const liveClass  = CLASSES.find(c => c.name === m.cls?.name);
+  const liveRarity = RARITIES.find(r => r.id   === m.rarity?.id);
+  if (liveClass)  m.cls    = liveClass;
+  if (liveRarity) m.rarity = liveRarity;
+  return m;
+}
+
 /* ── Strip non-serialisable run fields (timers, renderer, Set → array) ── */
 function _serializeRun(run) {
   return {
@@ -49,6 +59,7 @@ function _serializeRun(run) {
     goldEarned:      run.goldEarned,
     activeBuffs:     run.activeBuffs,
     abilitiesUsed:   [...run.abilitiesUsed],   // Set → plain array
+    restAbilitiesUsed: [...run.restAbilitiesUsed],
     startTime:       run.startTime,
     floorStartTime:  run.floorStartTime,
     returnStartTime: run.returnStartTime,
@@ -65,7 +76,7 @@ function _restoreRun(snap, savedAt) {
   // Build the shell (no live timers / renderer yet)
   const run = {
     id:               snap.id,
-    party:            snap.party,
+    party:            snap.party.map(_relinkMember),
     phase:            snap.phase,
     floor:            snap.floor,
     roomIdx:          snap.roomIdx,
@@ -73,6 +84,7 @@ function _restoreRun(snap, savedAt) {
     goldEarned:       snap.goldEarned,
     activeBuffs:      (snap.activeBuffs || []).filter(b => b.expiresAt > now),
     abilitiesUsed:    new Set(snap.abilitiesUsed || []),
+    restAbilitiesUsed: new Set(snap.restAbilitiesUsed || []),
     startTime:        snap.startTime,
     floorStartTime:   snap.floorStartTime,
     returnStartTime:  snap.returnStartTime,
@@ -211,7 +223,7 @@ function loadState() {
 
   // Applicant pool (including returning veterans)
   if (Array.isArray(data.applicants)) {
-    applicants            = data.applicants;
+    applicants            = data.applicants.map(_relinkMember);
     _applicantRosterLevel = data.applicantRosterLevel ?? -1;
   }
 
