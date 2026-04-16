@@ -293,9 +293,13 @@ function _showRestOverlay(run) {
       const hpColor  = hpPct > 55 ? '#4ac96a' : hpPct > 28 ? '#e9c84a' : '#e94560';
       const incap    = m.status === 'incapacitated';
       const wounded  = m.status === 'wounded';
-      const rab      = m.cls.restAbility;
-      const restUsed = run.restAbilitiesUsed.has(m.id);
-      const canRest  = rab && !restUsed && !incap;
+      const rab        = m.cls.restAbility;
+      const restUsed   = run.restAbilitiesUsed.has(m.id);
+      const canRest    = rab && !restUsed && !incap;
+
+      const ab         = m.cls.ability;
+      const abUsed     = run.abilitiesUsed.has(m.id);
+      const canAbility = ab?.restUsable && !abUsed && !incap;
 
       const card = document.createElement('div');
       card.className = `rest-member-card${incap ? ' rest-member-incap' : wounded ? ' rest-member-wounded' : ''}`;
@@ -309,17 +313,28 @@ function _showRestOverlay(run) {
             <span class="rest-hp-val">${incap ? '💀' : `${m.hp}/${m.maxHp}`}</span>
           </div>
           ${canRest
-            ? `<button class="rest-ability-btn" data-tooltip="${rab.flavor}">${rab.name}</button>`
+            ? `<button class="rest-ability-btn" data-tooltip="${rab.flavor}" title="${rab.flavor}" aria-describedby="rest-tip-${m.id}">${rab.name}</button><span class="rest-tip-sr" id="rest-tip-${m.id}" role="tooltip">${rab.flavor}</span>`
             : rab && restUsed
               ? `<span class="rest-ability-used">${rab.name} (used)</span>`
               : rab && incap
                 ? `<span class="rest-ability-used">${rab.name}</span>`
                 : ''}
+          ${canAbility
+            ? `<button class="rest-ability-btn rest-ability-combat" data-tooltip="${ab.desc}" title="${ab.desc}" aria-describedby="rest-abtip-${m.id}">✦ ${ab.name}</button><span class="rest-tip-sr" id="rest-abtip-${m.id}" role="tooltip">${ab.desc}</span>`
+            : ab?.restUsable && abUsed
+              ? `<span class="rest-ability-used">✦ ${ab.name} (used)</span>`
+              : ''}
         </div>`;
 
       if (canRest) {
         card.querySelector('.rest-ability-btn').addEventListener('click', () => {
           useRestAbility(run.id, m.id);
+        });
+      }
+      if (canAbility) {
+        card.querySelector('.rest-ability-combat').addEventListener('click', () => {
+          useAbility(run.id, m.id);
+          _showRestOverlay(run);
         });
       }
       summaryEl.appendChild(card);
@@ -362,6 +377,12 @@ function useRestAbility(runId, memberId) {
       const target = [...run.party].filter(p => p.status !== 'incapacitated').sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))[0];
       if (target) {
         const gain = Math.min(rab.value, target.maxHp - target.hp);
+        if (gain === 0) {
+          run.restAbilitiesUsed.delete(memberId);   // refund — no effect
+          addLog(`🏕️ ${who} reaches for ${rab.name}, but everyone is already at full health.`, 'dungeon');
+          _showRestOverlay(run);
+          return;
+        }
         target.hp += gain;
         if (target.hp >= target.maxHp * 0.55) target.status = 'active'; else if (target.hp >= target.maxHp * 0.35) target.status = 'wounded';
         result = `${target.name.split(' ')[0]} recovers ${gain} HP.`;
@@ -370,6 +391,12 @@ function useRestAbility(runId, memberId) {
     }
     case 'healSelf': {
       const gain = Math.min(rab.value, m.maxHp - m.hp);
+      if (gain === 0) {
+        run.restAbilitiesUsed.delete(memberId);   // refund — no effect
+        addLog(`🏕️ ${who} begins to meditate, but is already at full health.`, 'dungeon');
+        _showRestOverlay(run);
+        return;
+      }
       m.hp += gain;
       if (m.hp >= m.maxHp * 0.55) m.status = 'active'; else if (m.hp >= m.maxHp * 0.35) m.status = 'wounded';
       result = `${who} recovers ${gain} HP.`;
@@ -404,8 +431,7 @@ function useRestAbility(runId, memberId) {
     }
   }
 
-  const flavorLine = `${who} ${rab.flavor}`;
-  addLog(`🏕️ ${who} uses ${rab.name}! ${flavorLine} ${result}`, 'dungeon');
+  addLog(`🏕️ ${who} uses ${rab.name}! ${rab.flavor} ${result}`, 'dungeon');
 
   run.renderer.updatePartyStatus(run.party);
   scheduleSave();
