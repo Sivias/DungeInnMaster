@@ -297,6 +297,73 @@
 .rest-return-info { font-size: 0.7rem; color: #3a5040; }
 .rest-return-info span { color: #7a9a80; }
 .rest-actions  { display: flex; gap: 14px; margin-top: 8px; flex-wrap: wrap; justify-content: center; }
+
+/* ── Rest screen party summary ── */
+.rest-party-summary {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  justify-content: center;
+  width: 100%; margin: 4px 0;
+}
+.rest-member-card {
+  background: rgba(10,28,18,0.85);
+  border: 1px solid #2a5040;
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex; align-items: center; gap: 8px;
+  min-width: 130px; flex: 1 1 130px; max-width: 180px;
+  transition: border-color 0.2s;
+}
+.rest-member-card.rest-member-wounded { border-color: #8a6020; }
+.rest-member-card.rest-member-incap   { border-color: #6a2020; opacity: 0.55; }
+.rest-member-icon  { font-size: 1.5rem; line-height: 1; }
+.rest-member-info  { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.rest-member-name  { font-size: 0.72rem; color: #c0d8c8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rest-hp-row       { display: flex; align-items: center; gap: 5px; }
+.rest-hp-bg        { flex: 1; height: 5px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+.rest-hp-fill      { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.rest-hp-val       { font-size: 0.58rem; color: #6a8a78; white-space: nowrap; }
+.rest-ability-btn {
+  font-size: 0.62rem; font-family: Georgia, serif;
+  padding: 3px 7px; border-radius: 6px; cursor: pointer;
+  background: rgba(20,50,35,0.9); border: 1px solid #3a8060;
+  color: #60e0a0; transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  position: relative;
+}
+.rest-ability-btn:hover { background: rgba(30,80,50,0.9); border-color: #60b080; }
+.rest-ability-btn.rest-ability-combat {
+  background: rgba(30,20,50,0.9); border-color: #6040a0; color: #c090f0;
+}
+.rest-ability-btn.rest-ability-combat:hover { background: rgba(50,30,80,0.9); border-color: #9060d0; }
+.rest-ability-btn[data-tooltip]:hover::after,
+.rest-ability-btn[data-tooltip]:focus-visible::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%; transform: translateX(-50%);
+  background: rgba(8, 18, 12, 0.97);
+  border: 1px solid #2a6040;
+  color: #a0c8b0;
+  font-size: 0.68rem;
+  font-family: Georgia, serif;
+  font-style: italic;
+  line-height: 1.45;
+  padding: 6px 10px;
+  border-radius: 7px;
+  white-space: normal;
+  width: 200px;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+  z-index: 200;
+  pointer-events: none;
+}
+.rest-ability-used { font-size: 0.58rem; color: #3a5a48; font-style: italic; }
+/* Visually hidden — read by screen readers via aria-describedby */
+.rest-tip-sr {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
 .descend-btn {
   padding: 12px 26px; font-size: 0.88rem;
   font-family: Georgia, serif; font-weight: bold;

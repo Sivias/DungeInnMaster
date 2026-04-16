@@ -108,11 +108,22 @@
   color: #c9a84c;
   background: rgba(50,38,8,0.7);
 }
+.sort-btn.active-reversed {
+  border-color: #7ab3cc;
+  color: #7ab3cc;
+  background: rgba(8,28,50,0.7);
+}
 
 /* ── Drag and drop ── */
 .applicant-card         { cursor: grab; }
 .applicant-card:active  { cursor: grabbing; }
 .applicant-card.dragging { opacity: 0.3; transform: scale(0.96); }
+
+.applicant-grid.drag-over-grid {
+  outline: 2px dashed #7ab3cc;
+  outline-offset: -4px;
+  background: rgba(8,28,50,0.25);
+}
 
 .party-slot.filled        { cursor: grab; }
 .party-slot.filled:active { cursor: grabbing; }
@@ -307,7 +318,7 @@
 
 /* ── Active run cards ── */
 .active-runs-container {
-  width: 100%; display: flex; flex-wrap: wrap; gap: 10px;
+  width: 100%; display: flex; flex-direction: column; gap: 10px;
 }
 .no-runs-msg {
   width: 100%; text-align: center;
@@ -321,7 +332,7 @@
   background: rgba(16,22,38,0.9);
   border: 2px solid #2a4a2a; border-radius: 10px;
   padding: 10px 14px;
-  flex: 1; min-width: 220px;
+  width: 100%;
   transition: border-color 0.2s;
 }
 
@@ -367,11 +378,40 @@
   font-style: italic; text-align: center; min-height: 1em;
 }
 
+/* ── True viewport-centre the title using absolute positioning so it is always
+   exactly centred between the two fixed corner buttons, regardless of how wide
+   the gold display grows.                                                      ── */
+#dungeon-page .header {
+  position: relative;
+  min-height: 44px;   /* header has no in-flow children once h1 is absolute */
+}
+
+#dungeon-page .header h1 {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: auto;         /* override base.css width:100% */
+  white-space: nowrap;
+}
+
 /* ── Mobile tweaks ── */
 @media (max-width: 480px) {
   .sort-bar { flex-wrap: wrap; gap: 4px; }
   .venture-btn { padding: 12px 24px; font-size: 0.9rem; width: 100%; }
   .applicant-header { flex-direction: column; align-items: flex-start; gap: 6px; }
   .applicant-controls { width: 100%; justify-content: space-between; }
+
+  #dungeon-page .header {
+    padding: 0;          /* absolute h1 needs no padding to centre */
+    margin-bottom: 12px; /* breathing room above "Active Expeditions" */
+  }
+
+  /* Compact the gold pill so it occupies less horizontal space and is less
+     likely to visually crowd the centred title on narrow screens.           */
+  #dungeon-page .gold-display {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+  }
 }
 
