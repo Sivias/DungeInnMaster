@@ -28,11 +28,9 @@ body {
 .header {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   width: 100%;
   gap: 8px;
-  /* Equal padding on both sides keeps the title clear of the two fixed corner buttons */
-  padding: 0 56px;
 }
 .header h1 {
   color: #e0c88a;
@@ -41,15 +39,13 @@ body {
   text-shadow: 0 0 18px rgba(224,200,138,0.4);
   white-space: nowrap;
   text-align: center;
-  width: 100%;
+  flex: 1;          /* grow to fill space between the two flanking buttons */
+  min-width: 0;
 }
 
-/* ── Gold display — fixed anchor top-right, consistent across all pages ── */
+/* ── Gold display — in-flow header button, right-hand side ── */
 .gold-display {
-  position: fixed;
-  top: 14px;
-  right: 12px;
-  z-index: 200;
+  flex-shrink: 0;
   /* reset native <button> appearance */
   appearance: none;
   -webkit-appearance: none;
@@ -72,7 +68,13 @@ body {
   transition: width 0.2s ease, padding 0.2s ease, border-radius 0.2s ease;
   overflow: hidden;
 }
-/* ── Consistent icon size ── */
+/* ── Header spacer — mirrors back-btn width on pages that have no left button ── */
+.header-spacer {
+  flex-shrink: 0;
+  width: 44px;   /* matches .back-btn min-width */
+}
+
+/* ── Gold icon & text ── */
 .gold-icon { font-size: 1.05rem; line-height: 1; flex-shrink: 0; }
 .gold-text  { transition: opacity 0.15s ease; }
 
@@ -93,9 +95,6 @@ body {
   .page {
     padding: 16px 12px;
     gap: 14px;
-  }
-  .header {
-    padding: 0 48px;   /* slightly tighter but still clear of corner buttons */
   }
   .header h1 {
     font-size: 1.25rem;
