@@ -55,10 +55,19 @@ function generateApplicant(guestLv) {
 }
 
 /* ── Open dungeon gate ── */
+let _dungeonTickId = null;
+
 function showDungeonPage() {
   showPage('dungeon-page');
   _initSortBar();
   refreshDungeonPage();
+  // Start lightweight bar-only tick; clear any previous one first
+  if (_dungeonTickId) clearInterval(_dungeonTickId);
+  _dungeonTickId = setInterval(_tickRunBars, 500);
+}
+
+function hideDungeonPage() {
+  if (_dungeonTickId) { clearInterval(_dungeonTickId); _dungeonTickId = null; }
 }
 
 /* ── Wire up sort bar once ── */
@@ -206,7 +215,33 @@ function postDeploy() {
   scheduleSave();
 }
 
-/* ── Active expeditions panel ── */
+/* ── Compute bar % for a run (shared by full render + tick) ── */
+function _runBarPct(run) {
+  if (run.pendingReward) return 100;
+  if (run.phase === 'returning' && run.returnDuration > 0)
+    return Math.max(0, 100 - ((Date.now() - run.returnStartTime) / run.returnDuration) * 100);
+  if (run.encRoomsCleared >= ROOMS_PER_FLOOR) return 100;
+  return Math.min(99, ((Date.now() - run.floorStartTime) / FLOOR_ESTIMATED_MS) * 100);
+}
+
+/* ── Phase label text for a run card ── */
+function _runPhaseText(run) {
+  if (run.paused) return { icon: '⏸️', text: `F${run.floor} — Paused · Tap to resume` };
+  if (run.pendingReward) return { icon: run.pendingReward.icon, text: run.pendingReward.title };
+  const enc = run.currentEncounter;
+  if (enc && run.encounterActive) return { icon: enc.icon, text: enc.name };
+  const phaseIcons = { traveling:'🥾', returning:'🏠', done:'✅', resting:'🏕️' };
+  const icon = phaseIcons[run.phase] ?? '🥾';
+  const text = { traveling: run.encRoomsCleared >= ROOMS_PER_FLOOR
+                               ? `F${run.floor} cleared`
+                               : `F${run.floor} · Rm ${run.encRoomsCleared + 1}/${ROOMS_PER_FLOOR}`,
+                 resting:   `F${run.floor} cleared`,
+                 returning: 'Returning',
+                 done:      'Done' }[run.phase] ?? `Floor ${run.floor}`;
+  return { icon, text };
+}
+
+/* ── Active expeditions panel — full DOM build, called when run list changes ── */
 function renderActiveRuns() {
   const container = document.getElementById('active-runs-container');
   if (!container) return;
@@ -219,6 +254,7 @@ function renderActiveRuns() {
   container.innerHTML = '';
   state.activeRuns.forEach(run => {
     const card = document.createElement('div');
+    card.dataset.runId = run.id;
 
     const alive = run.party.filter(m => m.status !== 'incapacitated').length;
     const total = run.party.length;
@@ -232,30 +268,8 @@ function renderActiveRuns() {
                  : 'card-healthy';
     card.className = `run-card ${health}${isPending ? ' card-pending' : ''}`;
 
-    const enc = run.currentEncounter;
-    const phaseIcons = { traveling:'🥾', returning:'🏠', done:'✅', resting:'🏕️' };
-    const phaseIcon  = run.paused ? '⏸️' : (phaseIcons[run.phase] ?? '🥾');
-    const phaseText  = run.paused
-      ? `F${run.floor} — Paused · Tap to resume`
-      : isPending
-        ? `${run.pendingReward.icon} ${run.pendingReward.title}`
-        : enc && run.encounterActive
-          ? `${enc.icon} ${enc.name}`
-          : ({ traveling: run.encRoomsCleared >= ROOMS_PER_FLOOR
-                            ? `🏕️ F${run.floor} cleared`
-                            : `F${run.floor} · Rm ${run.encRoomsCleared + 1}/${ROOMS_PER_FLOOR}`,
-               resting:   `🏕️ F${run.floor} cleared`,
-               returning: 'Returning',
-               done:      'Done' }[run.phase] ?? `Floor ${run.floor}`);
-
-    // Time-based mini-bar (100% for pending/done, return-walk progress when returning, elapsed time when traveling)
-    const bar = isPending ? '100'
-      : run.phase === 'returning' && run.returnDuration > 0
-        ? Math.max(0, 100 - ((Date.now() - run.returnStartTime) / run.returnDuration) * 100).toFixed(0)
-        : run.encRoomsCleared >= ROOMS_PER_FLOOR
-          ? '100'
-          : Math.min(99, ((Date.now() - run.floorStartTime) / FLOOR_ESTIMATED_MS) * 100).toFixed(0);
-
+    const { icon: phaseIcon, text: phaseText } = _runPhaseText(run);
+    const bar = _runBarPct(run).toFixed(1);
     const watchLabel = isPending ? '📬 Claim' : '👁 Watch';
 
     card.innerHTML = `
@@ -268,6 +282,18 @@ function renderActiveRuns() {
       <button class="watch-btn">${watchLabel}</button>`;
     card.querySelector('.watch-btn').addEventListener('click', () => watchRun(run.id));
     container.appendChild(card);
+  });
+}
+
+/* ── Lightweight tick: only update bar widths on existing cards ── */
+function _tickRunBars() {
+  const container = document.getElementById('active-runs-container');
+  if (!container) return;
+  state.activeRuns.forEach(run => {
+    const card = container.querySelector(`[data-run-id="${run.id}"]`);
+    if (!card) return;
+    const fill = card.querySelector('.run-mini-bar-fill');
+    if (fill) fill.style.width = _runBarPct(run).toFixed(1) + '%';
   });
 }
 
@@ -501,8 +527,3 @@ function getParty() {
   return partyIds.map(id => applicants.find(a => a.id === id));
 }
 
-/* ── Live tick: refresh active-run cards while the dungeon page is open ── */
-setInterval(() => {
-  if (!document.getElementById('dungeon-page').classList.contains('hidden'))
-    renderActiveRuns();
-}, 500);

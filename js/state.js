@@ -46,7 +46,7 @@ function setGold(n) {
   const shouldCollapse = !state.goldExpanded;
   document.querySelectorAll('.gold-display').forEach(el => {
     el.classList.toggle('gold-collapsed', shouldCollapse);
-    el.dataset.canCollapse = 'true';
+    el.setAttribute('aria-label', `Gold: ${n}`);
   });
   // Keep lightweight dungeon affordability UI in sync without forcing a full grid re-render.
   if (document.getElementById('reroll-btn')) _updateRerollBtn();
@@ -85,6 +85,8 @@ function addCombatLog(run, msg, type = '', subtype = '') {
 
 /* ── Page navigation ── */
 function showPage(id) {
+  // Stop the dungeon tick whenever we leave that page
+  if (id !== 'dungeon-page' && typeof hideDungeonPage === 'function') hideDungeonPage();
   document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
 }

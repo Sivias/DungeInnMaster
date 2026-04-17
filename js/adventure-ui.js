@@ -6,6 +6,7 @@
    Depends on: adventure.js (helpers: _fmtMs, _fmtDur,
                _partyLabel, _pushTimer, _cancelRunTimers)
                data.js (ABILITY_DURATION_MS, ROOMS_PER_FLOOR)
+               state.js (FLOOR_ESTIMATED_MS)
 ═══════════════════════════════════════════════════════ */
 
 /* ── Main adventure-page refresh ── */
@@ -23,7 +24,7 @@ function updateAdventureUI(run) {
   if (run.phase === 'returning') {
     if (run.returnDuration > 0) {
       const elapsed = now - run.returnStartTime;
-      pct = Math.max(0, 100 - (elapsed / run.returnDuration) * 100);
+      pct = Math.min(100, Math.max(0, 100 - (elapsed / run.returnDuration) * 100));
       const msLeft = Math.max(0, run.returnDuration - elapsed);
       timeText = '↩ ' + _fmtMs(msLeft);
     } else {
@@ -127,8 +128,10 @@ function renderAdvParty(run) {
 
       const abilityBtn = document.createElement('button');
       abilityBtn.className = 'ability-btn';
-      abilityBtn.title = m.cls.ability.desc;
+      // data-tooltip drives the CSS tooltip; aria-label gives screen readers the same info.
+      // title is intentionally omitted to avoid a duplicate native browser tooltip.
       abilityBtn.dataset.tooltip = m.cls.ability.desc;
+      abilityBtn.setAttribute('aria-label', `${m.cls.ability.name}: ${m.cls.ability.desc}`);
       abilityBtn.textContent = `✦ ${m.cls.ability.name}`;
 
       card.appendChild(iconDiv);
@@ -139,7 +142,8 @@ function renderAdvParty(run) {
       card.appendChild(abilityBtn);
       // Attach click listener once — useAbility validates canUse internally
       card.querySelector('.ability-btn').addEventListener('click', e => {
-        e.currentTarget.blur();
+        // Only blur for pointer clicks — keyboard users (e.detail === 0) keep focus
+        if (e.detail > 0) e.currentTarget.blur();
         useAbility(run.id, m.id);
       });
       if (container.children[idx]) {
