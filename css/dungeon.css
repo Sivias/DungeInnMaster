@@ -2,7 +2,9 @@
    DUNGEON.CSS — Party selection screen
 ═══════════════════════════════════════ */
 
-#dungeon-page { max-width: 800px; --page-max-width: 800px; }
+#dungeon-page { max-width: 800px; --page-max-width: 800px; gap: 26px; }
+
+#dungeon-page .header { margin-bottom: 8px; }
 
 /* ── Deploy section inner layout ── */
 #deploy-section {
@@ -405,6 +407,12 @@
   #dungeon-page .header {
     padding: 0;          /* absolute h1 needs no padding to centre */
     margin-bottom: 12px; /* breathing room above "Active Expeditions" */
+  }
+
+  /* Compact the gold pill so it occupies less horizontal space and is less
+     likely to visually crowd the centred title on narrow screens.           */
+  #dungeon-page .gold-display {
+    padding: 4px 10px;
   }
 }
 

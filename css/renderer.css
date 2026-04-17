@@ -5,6 +5,7 @@
 .dungeon-canvas-wrap {
   width: 100%;
   max-width: 640px;
+  margin-top: 10px;           /* extra buffer between the title and the render window */
   line-height: 0;
   border: 3px solid #6b4f2a;
   border-radius: 8px;
@@ -43,4 +44,3 @@
 .enc-badge .enc-icon { font-size: 1.6rem; line-height: 1; }
 .enc-badge .enc-name { font-size: 0.85rem; color: #e08080; font-weight: bold; }
 .enc-badge .enc-diff { font-size: 0.65rem; color: #8a5050; letter-spacing: 1px; }
-

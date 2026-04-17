@@ -58,7 +58,7 @@ const CLASSES = [
   },
   {
     name: 'Bard', icon: '🎵', basePower: 2, baseHp: 20,
-    ability:     { name: 'Inspire',       desc: 'Grants every party member +3 power for the rest of this run.',  type: 'runBoost', value: 3, restUsable: true },
+    ability:     { name: 'Inspire',       desc: 'Grants every party member +3 power for the rest of this floor.',  type: 'runBoost', value: 3 },
     restAbility: { name: 'Rousing Ballad', type: 'runBoost',  value: 4,
       desc: 'Grants the whole party +4 power for the rest of the run.',
       flavor: 'unslings the lute and plays a rollicking tune that echoes off the stone walls. Even the shadows seem to dance. Blades feel lighter, hearts grow bold.' }

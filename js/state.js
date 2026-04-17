@@ -24,6 +24,7 @@ const ABILITY_DURATION_MS = {
 
 const state = {
   gold: 50,
+  goldExpanded: false,  // true when user has manually expanded the collapsed gold pill
   selected: null,
   locs: Object.fromEntries(Object.keys(DEFS).map(k => [k, { level: 0 }])),
   activeRuns:    [],    // array of live run objects
@@ -42,8 +43,20 @@ function setGold(n) {
     const el = document.getElementById(id);
     if (el) el.textContent = n;
   });
+  const shouldCollapse = n > 999 && !state.goldExpanded;
+  document.querySelectorAll('.gold-display').forEach(el => {
+    el.classList.toggle('gold-collapsed', shouldCollapse);
+    el.dataset.canCollapse = n > 999 ? 'true' : 'false';
+  });
   // Keep lightweight dungeon affordability UI in sync without forcing a full grid re-render.
   if (document.getElementById('reroll-btn')) _updateRerollBtn();
+}
+
+/* ── Toggle the gold pill between collapsed (circle) and expanded ── */
+function toggleGoldDisplay() {
+  if (state.gold <= 999) return;
+  state.goldExpanded = !state.goldExpanded;
+  setGold(state.gold);
 }
 
 /* ── Append to all visible event logs (general/global events) ── */
