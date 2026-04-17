@@ -138,11 +138,13 @@
   box-shadow: 0 0 16px rgba(201,168,76,0.45);
 }
 
-/* ── Back / return button ── */
+/* ── Back / return button — fixed, aligned with page content left edge ── */
 .back-btn {
+  position: fixed;
+  top: 24px;
+  left: max(16px, calc(50vw - var(--page-max-width, 800px) / 2 + 16px));
+  z-index: 110;
   flex-shrink: 0;
-  position: relative;
-  z-index: 110;           /* own stacking context — floats above fixed overlays */
   width: 44px;
   height: 44px;
   border-radius: 50%;

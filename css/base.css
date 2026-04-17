@@ -24,24 +24,13 @@ body {
   gap: 18px;
 }
 
-/* ── Header ── */
+/* ── Header — plain in-flow row; buttons are fixed so only h1 stays in flow ── */
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
   gap: 8px;
-  /* Sticky so buttons stay on-screen during scroll.
-     Intentionally NO z-index here — without a stacking context the h1
-     remains below fixed overlays, while the buttons' own z-index:110
-     lets them punch through. */
-  position: sticky;
-  top: 0;
-  background: rgba(26, 26, 46, 0.94);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-  padding: 10px 0;
-  margin-bottom: -10px;
 }
 .header h1 {
   color: #e0c88a;
@@ -54,11 +43,13 @@ body {
   min-width: 0;
 }
 
-/* ── Gold display — in-flow header button, right-hand side ── */
+/* ── Gold display — fixed to top of viewport, aligned with page content ── */
 .gold-display {
+  position: fixed;
+  top: 24px;
+  right: max(16px, calc(50vw - var(--page-max-width, 800px) / 2 + 16px));
+  z-index: 110;
   flex-shrink: 0;
-  position: relative;
-  z-index: 110;           /* own stacking context — floats above fixed overlays */
   /* reset native <button> appearance */
   appearance: none;
   -webkit-appearance: none;
