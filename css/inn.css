@@ -2,8 +2,9 @@
    INN.CSS — Inn room & upgrade UI
 ═══════════════════════════════════════ */
 
-#inn-page { max-width: 628px; --page-max-width: 628px; }
+#inn-page { max-width: 628px; --page-max-width: 628px; gap: 26px; }
 
+#inn-page .header { margin-bottom: 8px; }
 #inn-page .header h1 { text-align: left; }
 
 /* ── Room wrapper ── */

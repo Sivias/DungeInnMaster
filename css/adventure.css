@@ -4,6 +4,8 @@
 
 #adventure-page { max-width: 780px; --page-max-width: 780px; position: relative; }
 
+#adventure-page .header { margin-bottom: 8px; }
+
 /* ── Battle log bar (filters + expand toggle) ── */
 .log-wrap-bar {
   display: flex;

@@ -62,7 +62,27 @@ body {
   white-space: nowrap;
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  cursor: default;
+  transition: width 0.2s ease, padding 0.2s ease, border-radius 0.2s ease;
+  overflow: hidden;
 }
+/* ── Consistent icon size ── */
+.gold-icon { font-size: 1.05rem; line-height: 1; flex-shrink: 0; }
+.gold-text  { transition: opacity 0.15s ease; }
+
+/* ── Collapsed state (gold > 999, user hasn't expanded) ── */
+.gold-display.gold-collapsed {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  justify-content: center;
+  cursor: pointer;
+}
+.gold-display.gold-collapsed .gold-text { display: none; }
+.gold-display:not(.gold-collapsed)[data-can-collapse='true'] { cursor: pointer; }
 
 /* ── Mobile typography & spacing ── */
 @media (max-width: 480px) {
@@ -80,9 +100,9 @@ body {
     min-width: 0;
   }
   .gold-display {
-    font-size: 0.85rem;
     padding: 6px 12px;
   }
+  .gold-icon { font-size: 1.05rem; } /* keep icon size consistent on mobile */
   .section-label { font-size: 0.65rem; }
 }
 
