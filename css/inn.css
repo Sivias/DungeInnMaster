@@ -5,6 +5,11 @@
 #inn-page { max-width: 628px; --page-max-width: 628px; gap: 26px; }
 
 #inn-page .header { margin-bottom: 8px; }
+#inn-page .header h1 {
+  text-align: left;
+  white-space: nowrap;
+  padding-right: 60px; /* keep clear of gold pill */
+}
 
 /* ── Room wrapper ── */
 .room-wrap {

@@ -31,21 +31,34 @@ body {
   justify-content: space-between;
   width: 100%;
   gap: 8px;
+  /* Sticky so buttons stay on-screen during scroll.
+     Intentionally NO z-index here — without a stacking context the h1
+     remains below fixed overlays, while the buttons' own z-index:110
+     lets them punch through. */
+  position: sticky;
+  top: 0;
+  background: rgba(26, 26, 46, 0.94);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  padding: 10px 0;
+  margin-bottom: -10px;
 }
 .header h1 {
   color: #e0c88a;
   font-size: 1.6rem;
   letter-spacing: 2px;
   text-shadow: 0 0 18px rgba(224,200,138,0.4);
-  white-space: nowrap;
+  white-space: normal;
   text-align: center;
-  flex: 1;          /* grow to fill space between the two flanking buttons */
+  flex: 1;
   min-width: 0;
 }
 
 /* ── Gold display — in-flow header button, right-hand side ── */
 .gold-display {
   flex-shrink: 0;
+  position: relative;
+  z-index: 110;           /* own stacking context — floats above fixed overlays */
   /* reset native <button> appearance */
   appearance: none;
   -webkit-appearance: none;
@@ -97,10 +110,8 @@ body {
     gap: 14px;
   }
   .header h1 {
-    font-size: 1.25rem;
-    letter-spacing: 1px;
-    white-space: normal;
-    min-width: 0;
+    font-size: 1.4rem;
+    letter-spacing: 1.5px;
   }
   .gold-display {
     padding: 6px 12px;
