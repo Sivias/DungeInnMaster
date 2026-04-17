@@ -10,6 +10,8 @@ const ROOMS_PER_FLOOR        = 3;               // encounter rooms per floor (ma
 const REST_HP_RECOVERY_PCT   = 0.30;            // fraction of missing HP recovered at rest
 const ENCOUNTER_INTERVAL_MIN = 12 * 1000;       // min 12 s between room encounters
 const ENCOUNTER_INTERVAL_MAX = 20 * 1000;       // max 20 s between room encounters
+// Estimated ms for one floor: intro walk (avg 10.5s) + 3 rooms × (avg encounter interval 16s + ~4s combat/walk)
+const FLOOR_ESTIMATED_MS = 10_500 + ROOMS_PER_FLOOR * ((ENCOUNTER_INTERVAL_MIN + ENCOUNTER_INTERVAL_MAX) / 2 + 4_000); // ≈ 70 500 ms
 
 /* ── Ability buff duration by rarity (up to 2 min) ── */
 const ABILITY_DURATION_MS = {
@@ -41,10 +43,10 @@ function setGold(n) {
     const el = document.getElementById(id);
     if (el) el.textContent = n;
   });
-  const shouldCollapse = n > 999 && !state.goldExpanded;
+  const shouldCollapse = !state.goldExpanded;
   document.querySelectorAll('.gold-display').forEach(el => {
     el.classList.toggle('gold-collapsed', shouldCollapse);
-    el.dataset.canCollapse = n > 999 ? 'true' : 'false';
+    el.setAttribute('aria-label', `Gold: ${n}`);
   });
   // Keep lightweight dungeon affordability UI in sync without forcing a full grid re-render.
   if (document.getElementById('reroll-btn')) _updateRerollBtn();
@@ -52,7 +54,6 @@ function setGold(n) {
 
 /* ── Toggle the gold pill between collapsed (circle) and expanded ── */
 function toggleGoldDisplay() {
-  if (state.gold <= 999) return;
   state.goldExpanded = !state.goldExpanded;
   setGold(state.gold);
 }
@@ -84,6 +85,8 @@ function addCombatLog(run, msg, type = '', subtype = '') {
 
 /* ── Page navigation ── */
 function showPage(id) {
+  // Stop the dungeon tick whenever we leave that page
+  if (id !== 'dungeon-page' && typeof hideDungeonPage === 'function') hideDungeonPage();
   document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
 }

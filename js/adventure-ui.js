@@ -6,6 +6,7 @@
    Depends on: adventure.js (helpers: _fmtMs, _fmtDur,
                _partyLabel, _pushTimer, _cancelRunTimers)
                data.js (ABILITY_DURATION_MS, ROOMS_PER_FLOOR)
+               state.js (FLOOR_ESTIMATED_MS)
 ═══════════════════════════════════════════════════════ */
 
 /* ── Main adventure-page refresh ── */
@@ -22,11 +23,12 @@ function updateAdventureUI(run) {
 
   if (run.phase === 'returning') {
     if (run.returnDuration > 0) {
-      pct = Math.min(100, ((now - run.returnStartTime) / run.returnDuration) * 100);
-      const msLeft = Math.max(0, run.returnDuration - (now - run.returnStartTime));
+      const elapsed = now - run.returnStartTime;
+      pct = Math.min(100, Math.max(0, 100 - (elapsed / run.returnDuration) * 100));
+      const msLeft = Math.max(0, run.returnDuration - elapsed);
       timeText = '↩ ' + _fmtMs(msLeft);
     } else {
-      pct = 100;
+      pct = 0;
       timeText = '↩ …';
     }
     floorLabelText = `Floor ${run.floor} — Returning`;
@@ -35,11 +37,15 @@ function updateAdventureUI(run) {
     floorLabelText = `Floor ${run.floor} Complete! 🏕️`;
     timeText = '🏕️ Rest';
   } else {
-    pct = Math.min(100, (run.encRoomsCleared / ROOMS_PER_FLOOR) * 100);
-    floorLabelText = run.encRoomsCleared >= ROOMS_PER_FLOOR
-      ? `Floor ${run.floor} Complete! 🏕️`
-      : `Floor ${run.floor} — Room ${run.encRoomsCleared + 1}/${ROOMS_PER_FLOOR}`;
-    timeText = _fmtMs(now - run.floorStartTime);
+    const floorElapsed = now - run.floorStartTime;
+    if (run.encRoomsCleared >= ROOMS_PER_FLOOR) {
+      pct = 100;
+      floorLabelText = `Floor ${run.floor} Complete! 🏕️`;
+    } else {
+      pct = Math.min(99, (floorElapsed / FLOOR_ESTIMATED_MS) * 100);
+      floorLabelText = `Floor ${run.floor} — Room ${run.encRoomsCleared + 1}/${ROOMS_PER_FLOOR}`;
+    }
+    timeText = _fmtMs(floorElapsed);
   }
 
   const fillEl = document.getElementById('floor-progress-fill');
@@ -122,7 +128,10 @@ function renderAdvParty(run) {
 
       const abilityBtn = document.createElement('button');
       abilityBtn.className = 'ability-btn';
-      abilityBtn.title = m.cls.ability.desc;
+      // data-tooltip drives the CSS tooltip; aria-label gives screen readers the same info.
+      // title is intentionally omitted to avoid a duplicate native browser tooltip.
+      abilityBtn.dataset.tooltip = m.cls.ability.desc;
+      abilityBtn.setAttribute('aria-label', `${m.cls.ability.name}: ${m.cls.ability.desc}`);
       abilityBtn.textContent = `✦ ${m.cls.ability.name}`;
 
       card.appendChild(iconDiv);
@@ -132,7 +141,11 @@ function renderAdvParty(run) {
       card.appendChild(buffTimerDiv);
       card.appendChild(abilityBtn);
       // Attach click listener once — useAbility validates canUse internally
-      card.querySelector('.ability-btn').addEventListener('click', () => useAbility(run.id, m.id));
+      card.querySelector('.ability-btn').addEventListener('click', e => {
+        // Only blur for pointer clicks — keyboard users (e.detail === 0) keep focus
+        if (e.detail > 0) e.currentTarget.blur();
+        useAbility(run.id, m.id);
+      });
       if (container.children[idx]) {
         container.replaceChild(card, container.children[idx]);
       } else {
@@ -230,7 +243,7 @@ function _showRestOverlay(run) {
   // Use the duration locked in _enterRestRoom — never recalculate from Date.now()
   const fmtReturn = _fmtMs(run.returnDuration);
   if (el('rest-return-time'))     el('rest-return-time').textContent     = fmtReturn;
-  if (el('rest-return-time-btn')) el('rest-return-time-btn').textContent = fmtReturn;
+  if (el('rest-return-gold-btn')) el('rest-return-gold-btn').textContent = run.goldEarned;
 
   overlay.classList.remove('hidden');
 }

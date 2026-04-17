@@ -4,7 +4,8 @@
 
 #adventure-page { max-width: 780px; --page-max-width: 780px; position: relative; }
 
-#adventure-page .header { margin-bottom: 8px; }
+/* Extra breathing room between the header and the canvas */
+#adventure-page .dungeon-canvas-wrap { margin-top: 24px; }
 
 /* ── Battle log bar (filters + expand toggle) ── */
 .log-wrap-bar {
@@ -171,12 +172,35 @@
   border: 1px solid #3a5060; color: #8a9aaa;
   border-radius: 6px; cursor: pointer; text-align: center;
   transition: border-color 0.2s, color 0.2s, background 0.2s;
+  position: relative;
 }
 .ability-btn:hover:not(:disabled) {
   border-color: #c9a84c; color: #c9a84c;
   background: rgba(50,40,10,0.9);
 }
 .ability-btn:disabled { opacity: 0.28; cursor: not-allowed; }
+.ability-btn[data-tooltip]:hover:not(:disabled)::after,
+.ability-btn[data-tooltip]:focus-visible:not(:disabled)::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%; transform: translateX(-50%);
+  background: rgba(8, 14, 30, 0.97);
+  border: 1px solid #2a4060;
+  color: #a0b8d0;
+  font-size: 0.68rem;
+  font-family: Georgia, serif;
+  font-style: italic;
+  line-height: 1.45;
+  padding: 6px 10px;
+  border-radius: 7px;
+  white-space: normal;
+  width: 180px;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+  z-index: 200;
+  pointer-events: none;
+}
 
 /* ── Run gold counter ── */
 .run-gold { font-size: 0.85rem; color: #7a8090; font-style: italic; }
