@@ -18,60 +18,70 @@ const CLASSES = [
     name: 'Fighter', icon: '⚔️', basePower: 4, baseHp: 30,
     ability:     { name: 'Rally Cry',     desc: 'Boosts the whole party\'s effective power by +8 this encounter.', type: 'powerBoost', value: 8 },
     restAbility: { name: 'Iron Will',     type: 'healAll',    value: 10,
+      desc: 'Heals every living party member for up to 10 HP.',
       flavor: 'slams a gauntlet on the cold stone and bellows a warrior\'s oath into the dark. The echo stirs something in every weary soul.' }
   },
   {
     name: 'Rogue', icon: '🗡️', basePower: 3, baseHp: 22,
     ability:     { name: 'Backstab',      desc: 'Doubles this member\'s power contribution for this encounter.',   type: 'selfDouble' },
     restAbility: { name: 'Scavenge',      type: 'gainGold',   value: 15,
+      desc: 'Finds 15g hidden in cracks and forgotten corners of the dungeon.',
       flavor: 'slips into every shadow and returns with pockets full of coins pried from cracks in forgotten flagstones.' }
   },
   {
     name: 'Mage', icon: '🔮', basePower: 5, baseHp: 20,
     ability:     { name: 'Fireball',      desc: 'Guaranteed success this encounter — costs 12 HP.',               type: 'autoWin', hpCost: 12 },
     restAbility: { name: 'Arcane Infusion', type: 'runBoost', value: 4,
+      desc: 'Grants the whole party +4 power for the rest of the run.',
       flavor: 'traces glowing sigils in the air above each ally\'s weapon. The light fades, but the enchantment lingers into the next floor.' }
   },
   {
     name: 'Cleric', icon: '✨', basePower: 3, baseHp: 26,
     ability:     { name: 'Mend',          desc: 'Heals the most wounded party member for 25 HP.',                 type: 'heal', value: 25, restUsable: true },
     restAbility: { name: 'Sacred Blessing', type: 'healLowest', value: 35,
+      desc: 'Heals the most wounded party member for up to 35 HP.',
       flavor: 'kneels in quiet prayer, golden light pooling beneath trembling hands. The wounds of the most grievously hurt begin to close.' }
   },
   {
     name: 'Ranger', icon: '🏹', basePower: 3, baseHp: 25,
     ability:     { name: 'Aimed Shot',    desc: 'Adds +10 to the success roll for this encounter.',               type: 'rollBoost', value: 10 },
     restAbility: { name: 'Herbal Remedy', type: 'healAll',    value: 12,
+      desc: 'Heals every living party member for up to 12 HP.',
       flavor: 'gathers roots and dark-veined bark from the dungeon walls and steeps them in a tin cup. The bitter tonic smells of pine and mud — but it works.' }
   },
   {
     name: 'Paladin', icon: '🛡️', basePower: 4, baseHp: 32,
     ability:     { name: 'Holy Shield',   desc: 'Halves all damage taken if this encounter is failed.',           type: 'shield' },
     restAbility: { name: 'Lay on Hands',  type: 'healLowest', value: 40,
+      desc: 'Heals the most wounded party member for up to 40 HP.',
       flavor: 'removes a gauntlet and places a bare palm on the most battered companion. Divine warmth flows through cracked ribs and tired muscle.' }
   },
   {
     name: 'Bard', icon: '🎵', basePower: 2, baseHp: 20,
     ability:     { name: 'Inspire',       desc: 'Grants every party member +3 power for the rest of this run.',  type: 'runBoost', value: 3, restUsable: true },
     restAbility: { name: 'Rousing Ballad', type: 'runBoost',  value: 4,
+      desc: 'Grants the whole party +4 power for the rest of the run.',
       flavor: 'unslings the lute and plays a rollicking tune that echoes off the stone walls. Even the shadows seem to dance. Blades feel lighter, hearts grow bold.' }
   },
   {
     name: 'Druid', icon: '🌿', basePower: 3, baseHp: 24,
     ability:     { name: 'Entangle',      desc: 'Roots the enemy — guaranteed success, no HP cost.',             type: 'autoWin' },
     restAbility: { name: 'Herbal Poultice', type: 'healLowest', value: 15,
+      desc: 'Heals the most wounded party member for up to 15 HP.',
       flavor: 'grinds a pale flower and a fistful of bat guano into a thick green paste, humming softly. The smell is awful. The healing is not.' }
   },
   {
     name: 'Warlock', icon: '💀', basePower: 5, baseHp: 20,
     ability:     { name: 'Dark Pact',     desc: 'Guaranteed success — costs 15 HP (paid in blood).',             type: 'autoWin', hpCost: 15 },
     restAbility: { name: 'Blood Tithe',   type: 'soulSiphon', value: 30, selfDmg: 10,
+      desc: 'Sacrifice 10 of your own HP to heal the most wounded ally for up to 30 HP.',
       flavor: 'whispers a bargain into the dark, and the dark whispers back. Life drains from their own veins, flowing into the wounds of a struggling ally.' }
   },
   {
     name: 'Monk', icon: '👊', basePower: 3, baseHp: 25,
     ability:     { name: 'Flurry',        desc: 'A rapid flurry of blows — adds +12 to the success roll.',       type: 'rollBoost', value: 12 },
     restAbility: { name: 'Focused Breathing', type: 'healSelf', value: 25,
+      desc: 'Heals yourself for up to 25 HP.',
       flavor: 'sits cross-legged on the cold stone, eyes closed, breathing slow and deliberate. Ki flows inward, mending bruised ribs and tired muscles.' }
   },
 ];

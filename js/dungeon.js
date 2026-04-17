@@ -248,11 +248,13 @@ function renderActiveRuns() {
                returning: 'Returning',
                done:      'Done' }[run.phase] ?? `Floor ${run.floor}`);
 
-    // Room-based mini-bar (100% for pending/done, return-walk progress when returning)
+    // Time-based mini-bar (100% for pending/done, return-walk progress when returning, elapsed time when traveling)
     const bar = isPending ? '100'
       : run.phase === 'returning' && run.returnDuration > 0
-        ? Math.min(100, ((Date.now() - run.returnStartTime) / run.returnDuration) * 100).toFixed(0)
-        : Math.min(100, (run.encRoomsCleared / ROOMS_PER_FLOOR) * 100).toFixed(0);
+        ? Math.max(0, 100 - ((Date.now() - run.returnStartTime) / run.returnDuration) * 100).toFixed(0)
+        : run.encRoomsCleared >= ROOMS_PER_FLOOR
+          ? '100'
+          : Math.min(99, ((Date.now() - run.floorStartTime) / FLOOR_ESTIMATED_MS) * 100).toFixed(0);
 
     const watchLabel = isPending ? '📬 Claim' : '👁 Watch';
 
@@ -499,3 +501,8 @@ function getParty() {
   return partyIds.map(id => applicants.find(a => a.id === id));
 }
 
+/* ── Live tick: refresh active-run cards while the dungeon page is open ── */
+setInterval(() => {
+  if (!document.getElementById('dungeon-page').classList.contains('hidden'))
+    renderActiveRuns();
+}, 500);

@@ -406,12 +406,5 @@
     padding: 0;          /* absolute h1 needs no padding to centre */
     margin-bottom: 12px; /* breathing room above "Active Expeditions" */
   }
-
-  /* Compact the gold pill so it occupies less horizontal space and is less
-     likely to visually crowd the centred title on narrow screens.           */
-  #dungeon-page .gold-display {
-    font-size: 0.75rem;
-    padding: 4px 10px;
-  }
 }
 

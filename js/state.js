@@ -10,6 +10,8 @@ const ROOMS_PER_FLOOR        = 3;               // encounter rooms per floor (ma
 const REST_HP_RECOVERY_PCT   = 0.30;            // fraction of missing HP recovered at rest
 const ENCOUNTER_INTERVAL_MIN = 12 * 1000;       // min 12 s between room encounters
 const ENCOUNTER_INTERVAL_MAX = 20 * 1000;       // max 20 s between room encounters
+// Estimated ms for one floor: intro walk (avg 10.5s) + 3 rooms × (avg encounter interval 16s + ~4s combat/walk)
+const FLOOR_ESTIMATED_MS = 10_500 + ROOMS_PER_FLOOR * ((ENCOUNTER_INTERVAL_MIN + ENCOUNTER_INTERVAL_MAX) / 2 + 4_000); // ≈ 70 500 ms
 
 /* ── Ability buff duration by rarity (up to 2 min) ── */
 const ABILITY_DURATION_MS = {

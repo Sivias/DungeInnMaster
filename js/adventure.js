@@ -282,7 +282,7 @@ function _showRestOverlay(run) {
   // Use the duration locked in _enterRestRoom — never recalculate from Date.now()
   const fmtReturn = _fmtMs(run.returnDuration);
   if (el('rest-return-time'))     el('rest-return-time').textContent     = fmtReturn;
-  if (el('rest-return-time-btn')) el('rest-return-time-btn').textContent = fmtReturn;
+  if (el('rest-return-gold-btn')) el('rest-return-gold-btn').textContent = run.goldEarned;
 
   // ── Party summary ──────────────────────────────────────────────────────────
   const summaryEl = el('rest-party-summary');
@@ -313,7 +313,7 @@ function _showRestOverlay(run) {
             <span class="rest-hp-val">${incap ? '💀' : `${m.hp}/${m.maxHp}`}</span>
           </div>
           ${canRest
-            ? `<button class="rest-ability-btn" data-tooltip="${rab.flavor}" title="${rab.flavor}" aria-describedby="rest-tip-${m.id}">${rab.name}</button><span class="rest-tip-sr" id="rest-tip-${m.id}" role="tooltip">${rab.flavor}</span>`
+            ? `<button class="rest-ability-btn" data-tooltip="${rab.desc}" title="${rab.desc}" aria-describedby="rest-tip-${m.id}">${rab.name}</button><span class="rest-tip-sr" id="rest-tip-${m.id}" role="tooltip">${rab.desc}</span>`
             : rab && restUsed
               ? `<span class="rest-ability-used">${rab.name} (used)</span>`
               : rab && incap
