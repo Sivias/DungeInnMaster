@@ -5,7 +5,7 @@
 #adventure-page { max-width: 780px; --page-max-width: 780px; position: relative; }
 
 /* Extra breathing room between the header and the canvas */
-#adventure-page .dungeon-canvas-wrap { margin-top: 10px; }
+#adventure-page .dungeon-canvas-wrap { margin-top: 24px; }
 
 /* ── Battle log bar (filters + expand toggle) ── */
 .log-wrap-bar {

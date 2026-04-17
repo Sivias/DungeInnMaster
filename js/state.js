@@ -43,10 +43,10 @@ function setGold(n) {
     const el = document.getElementById(id);
     if (el) el.textContent = n;
   });
-  const shouldCollapse = n > 999 && !state.goldExpanded;
+  const shouldCollapse = !state.goldExpanded;
   document.querySelectorAll('.gold-display').forEach(el => {
     el.classList.toggle('gold-collapsed', shouldCollapse);
-    el.dataset.canCollapse = n > 999 ? 'true' : 'false';
+    el.dataset.canCollapse = 'true';
   });
   // Keep lightweight dungeon affordability UI in sync without forcing a full grid re-render.
   if (document.getElementById('reroll-btn')) _updateRerollBtn();
@@ -54,7 +54,6 @@ function setGold(n) {
 
 /* ── Toggle the gold pill between collapsed (circle) and expanded ── */
 function toggleGoldDisplay() {
-  if (state.gold <= 999) return;
   state.goldExpanded = !state.goldExpanded;
   setGold(state.gold);
 }

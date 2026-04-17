@@ -380,23 +380,6 @@
   font-style: italic; text-align: center; min-height: 1em;
 }
 
-/* ── True viewport-centre the title using absolute positioning so it is always
-   exactly centred between the two fixed corner buttons, regardless of how wide
-   the gold display grows.                                                      ── */
-#dungeon-page .header {
-  position: relative;
-  min-height: 44px;   /* header has no in-flow children once h1 is absolute */
-}
-
-#dungeon-page .header h1 {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: auto;         /* override base.css width:100% */
-  white-space: nowrap;
-}
-
 /* ── Mobile tweaks ── */
 @media (max-width: 480px) {
   .sort-bar { flex-wrap: wrap; gap: 4px; }
@@ -407,12 +390,6 @@
   #dungeon-page .header {
     padding: 0;          /* absolute h1 needs no padding to centre */
     margin-bottom: 12px; /* breathing room above "Active Expeditions" */
-  }
-
-  /* Compact the gold pill so it occupies less horizontal space and is less
-     likely to visually crowd the centred title on narrow screens.           */
-  #dungeon-page .gold-display {
-    padding: 4px 10px;
   }
 }
 

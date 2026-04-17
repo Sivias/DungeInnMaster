@@ -36,7 +36,7 @@ body {
 }
 .header h1 {
   color: #e0c88a;
-  font-size: 1.3rem;
+  font-size: 1.6rem;
   letter-spacing: 2px;
   text-shadow: 0 0 18px rgba(224,200,138,0.4);
   white-space: nowrap;
@@ -44,11 +44,11 @@ body {
   width: 100%;
 }
 
-/* ── Gold display — fixed anchor top-right, mirrors the back-btn top-left ── */
+/* ── Gold display — fixed anchor top-right, consistent across all pages ── */
 .gold-display {
   position: fixed;
   top: 14px;
-  right: max(12px, calc((100vw - var(--page-max-width, 628px)) / 2 + 4px));
+  right: 12px;
   z-index: 200;
   background: linear-gradient(135deg, #3a2e10, #5a4820);
   border: 2px solid #c9a84c;
@@ -82,7 +82,7 @@ body {
   cursor: pointer;
 }
 .gold-display.gold-collapsed .gold-text { display: none; }
-.gold-display:not(.gold-collapsed)[data-can-collapse='true'] { cursor: pointer; }
+.gold-display:not(.gold-collapsed) { cursor: pointer; }
 
 /* ── Mobile typography & spacing ── */
 @media (max-width: 480px) {
@@ -94,7 +94,7 @@ body {
     padding: 0 48px;   /* slightly tighter but still clear of corner buttons */
   }
   .header h1 {
-    font-size: 1.05rem;
+    font-size: 1.25rem;
     letter-spacing: 1px;
     white-space: normal;
     min-width: 0;
