@@ -141,8 +141,8 @@
 /* ── Back / return button — fixed, aligned with page content left edge ── */
 .back-btn {
   position: fixed;
-  top: 24px;
-  left: max(16px, calc(50vw - var(--page-max-width, 800px) / 2 + 16px));
+  top: var(--page-padding-top, 24px);
+  left: max(var(--page-padding-x, 16px), calc(50vw - var(--page-max-width, 800px) / 2 + var(--page-padding-x, 16px)));
   z-index: 110;
   flex-shrink: 0;
   width: 44px;

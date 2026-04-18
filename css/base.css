@@ -11,6 +11,8 @@ body {
   min-height: 100vh;
   background-color: #1a1a2e;
   font-family: Georgia, serif;
+  --page-padding-top: 24px;
+  --page-padding-x: 16px;
 }
 
 .hidden { display: none !important; }
@@ -20,7 +22,7 @@ body {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  padding: 24px 16px;
+  padding: var(--page-padding-top) var(--page-padding-x);
   gap: 18px;
 }
 
@@ -46,8 +48,8 @@ body {
 /* ── Gold display — fixed to top of viewport, aligned with page content ── */
 .gold-display {
   position: fixed;
-  top: 24px;
-  right: max(16px, calc(50vw - var(--page-max-width, 800px) / 2 + 16px));
+  top: var(--page-padding-top);
+  right: max(var(--page-padding-x), calc(50vw - var(--page-max-width, 800px) / 2 + var(--page-padding-x)));
   z-index: 110;
   flex-shrink: 0;
   /* reset native <button> appearance */
@@ -96,8 +98,11 @@ body {
 
 /* ── Mobile typography & spacing ── */
 @media (max-width: 480px) {
+  body {
+    --page-padding-top: 16px;
+    --page-padding-x: 12px;
+  }
   .page {
-    padding: 16px 12px;
     gap: 14px;
   }
   .header h1 {
