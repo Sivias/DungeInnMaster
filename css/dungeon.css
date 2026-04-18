@@ -138,8 +138,12 @@
   box-shadow: 0 0 16px rgba(201,168,76,0.45);
 }
 
-/* ── Back / return button — fixed circle anchored to top-left of viewport ── */
+/* ── Back / return button — fixed, aligned with page content left edge ── */
 .back-btn {
+  position: fixed;
+  top: var(--page-padding-top, 24px);
+  left: max(var(--page-padding-x, 16px), calc(50vw - var(--page-max-width, 800px) / 2 + var(--page-padding-x, 16px)));
+  z-index: 110;
   flex-shrink: 0;
   width: 44px;
   height: 44px;
@@ -164,13 +168,13 @@
   color: #8a9aaa;
   transition: color 0.2s;
 }
-#back-btn::before      { content: '←'; }
+#back-btn::before,
 #watch-inn-btn::before { content: '🏠'; }
 .back-btn:hover:not(:disabled) { border-color: #c9a84c; box-shadow: 0 2px 16px rgba(201,168,76,0.3); }
 .back-btn:hover:not(:disabled)::before { color: #c9a84c; }
 .back-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* ── Back / return button — fixed circle anchored to top-left of viewport ── */
+/* ── Party slots ── */
 .party-slots { display: flex; flex-wrap: wrap; gap: 12px; width: 100%; }
 .party-slot {
   flex: 1 1 calc(25% - 9px);

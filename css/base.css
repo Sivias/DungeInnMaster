@@ -11,6 +11,8 @@ body {
   min-height: 100vh;
   background-color: #1a1a2e;
   font-family: Georgia, serif;
+  --page-padding-top: 24px;
+  --page-padding-x: 16px;
 }
 
 .hidden { display: none !important; }
@@ -20,11 +22,11 @@ body {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  padding: 24px 16px;
+  padding: var(--page-padding-top) var(--page-padding-x);
   gap: 18px;
 }
 
-/* ── Header ── */
+/* ── Header — plain in-flow row; buttons are fixed so only h1 stays in flow ── */
 .header {
   display: flex;
   align-items: center;
@@ -37,14 +39,18 @@ body {
   font-size: 1.6rem;
   letter-spacing: 2px;
   text-shadow: 0 0 18px rgba(224,200,138,0.4);
-  white-space: nowrap;
+  white-space: normal;
   text-align: center;
-  flex: 1;          /* grow to fill space between the two flanking buttons */
+  flex: 1;
   min-width: 0;
 }
 
-/* ── Gold display — in-flow header button, right-hand side ── */
+/* ── Gold display — fixed to top of viewport, aligned with page content ── */
 .gold-display {
+  position: fixed;
+  top: var(--page-padding-top);
+  right: max(var(--page-padding-x), calc(50vw - var(--page-max-width, 800px) / 2 + var(--page-padding-x)));
+  z-index: 110;
   flex-shrink: 0;
   /* reset native <button> appearance */
   appearance: none;
@@ -92,15 +98,16 @@ body {
 
 /* ── Mobile typography & spacing ── */
 @media (max-width: 480px) {
+  body {
+    --page-padding-top: 16px;
+    --page-padding-x: 12px;
+  }
   .page {
-    padding: 16px 12px;
     gap: 14px;
   }
   .header h1 {
-    font-size: 1.25rem;
-    letter-spacing: 1px;
-    white-space: normal;
-    min-width: 0;
+    font-size: 1.4rem;
+    letter-spacing: 1.5px;
   }
   .gold-display {
     padding: 6px 12px;
