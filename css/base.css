@@ -96,6 +96,26 @@ body {
 .gold-display.gold-collapsed .gold-text { display: none; }
 .gold-display:not(.gold-collapsed) { cursor: pointer; }
 
+/* ── Floating gold delta pop (+40 / -18) ── */
+.gold-delta-pop {
+  position: absolute;
+  z-index: 200;
+  font-family: Georgia, serif;
+  font-size: 0.82rem;
+  font-weight: bold;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: goldDeltaFloat 1.4s ease-out forwards;
+}
+.gold-delta-gain { color: #4ac96a; text-shadow: 0 0 8px rgba(74,201,106,0.7); }
+.gold-delta-loss { color: #e94560; text-shadow: 0 0 8px rgba(233,69,96,0.7); }
+
+@keyframes goldDeltaFloat {
+  0%   { opacity: 1; transform: translateY(0); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-32px); }
+}
+
 /* ── Mobile typography & spacing ── */
 @media (max-width: 480px) {
   body {

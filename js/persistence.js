@@ -62,6 +62,8 @@ function _serializeRun(run) {
     restAbilitiesUsed: [...run.restAbilitiesUsed],
     startTime:       run.startTime,
     floorStartTime:  run.floorStartTime,
+    phaseStartTime:  run.phaseStartTime,
+    activeMs:        run.activeMs,
     returnStartTime: run.returnStartTime,
     returnDuration:  run.returnDuration,
     defeatedCount:   run.defeatedCount,
@@ -87,6 +89,8 @@ function _restoreRun(snap, savedAt) {
     restAbilitiesUsed: new Set(snap.restAbilitiesUsed || []),
     startTime:        snap.startTime,
     floorStartTime:   snap.floorStartTime,
+    phaseStartTime:   0,               // will be set when travel resumes
+    activeMs:         snap.activeMs ?? 0,
     returnStartTime:  snap.returnStartTime,
     returnDuration:   snap.returnDuration,
     defeatedCount:    snap.defeatedCount,
@@ -134,8 +138,9 @@ function _restoreRun(snap, savedAt) {
   if (run.phase === 'traveling' && run.encRoomsCleared >= ROOMS_PER_FLOOR) {
     run.phase = 'resting';
     if (!run.returnDuration) {
-      const floorElapsed = (savedAt || now) - run.floorStartTime;
-      run.returnDuration = Math.max(30_000, Math.round(floorElapsed * 0.5));
+      // Accumulate any un-snapshotted travel time then compute return duration
+      if (snap.phaseStartTime) run.activeMs += Math.max(0, (savedAt || now) - snap.phaseStartTime);
+      run.returnDuration = Math.max(20_000, Math.round(run.activeMs * 0.33));
     }
   }
 
@@ -144,6 +149,12 @@ function _restoreRun(snap, savedAt) {
   // ── Re-wire timers by phase ──
   if (run.phase === 'traveling') {
     // Don't auto-resume — mark as paused so the player is prompted on next watch.
+    // Accumulate the travel time that elapsed up to when the save was made, then
+    // freeze the clock (phaseStartTime = 0) until the player resumes.
+    const traveledSincePhaseStart = snap.phaseStartTime
+      ? Math.max(0, (savedAt || now) - snap.phaseStartTime)
+      : 0;
+    run.activeMs += traveledSincePhaseStart;
     run.paused = true;
 
   } else if (run.phase === 'resting') {

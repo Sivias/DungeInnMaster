@@ -37,12 +37,46 @@ function maxParties() {
 }
 
 /* ── Update gold across all displays ── */
+let _goldAutoCollapseTimer = null;
+
 function setGold(n) {
+  const delta = n - state.gold;
+  const wasCollapsed = !state.goldExpanded;
+
   state.gold = n;
   ['gold-amount', 'gold-amount-d', 'gold-amount-a'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = n;
   });
+
+  // If gold actually changed (not initial render), auto-expand and animate
+  if (delta !== 0) {
+    // Temporarily expand
+    state.goldExpanded = true;
+
+    // Show floating delta text on all visible gold displays
+    document.querySelectorAll('.gold-display').forEach(el => {
+      // Skip buttons inside a hidden page (offsetParent is always null for fixed elements)
+      if (!el.closest('.hidden')) {
+        _spawnGoldDelta(el, delta);
+      }
+    });
+
+    // Reset any existing auto-collapse timer
+    if (_goldAutoCollapseTimer) clearTimeout(_goldAutoCollapseTimer);
+
+    // If it was collapsed before, auto-collapse after 2.5 s
+    if (wasCollapsed) {
+      _goldAutoCollapseTimer = setTimeout(() => {
+        state.goldExpanded = false;
+        document.querySelectorAll('.gold-display').forEach(el => {
+          el.classList.add('gold-collapsed');
+        });
+        _goldAutoCollapseTimer = null;
+      }, 2500);
+    }
+  }
+
   const shouldCollapse = !state.goldExpanded;
   document.querySelectorAll('.gold-display').forEach(el => {
     el.classList.toggle('gold-collapsed', shouldCollapse);
@@ -50,6 +84,20 @@ function setGold(n) {
   });
   // Keep lightweight dungeon affordability UI in sync without forcing a full grid re-render.
   if (document.getElementById('reroll-btn')) _updateRerollBtn();
+}
+
+/* ── Spawn a floating +/- delta label near a gold display button ── */
+function _spawnGoldDelta(anchorEl, delta) {
+  const label = document.createElement('span');
+  label.className = 'gold-delta-pop' + (delta > 0 ? ' gold-delta-gain' : ' gold-delta-loss');
+  label.textContent = (delta > 0 ? '+' : '') + delta;
+  // Anchor to the button's right edge so the label always sits to the left of it,
+  // even as the pill expands leftward from its fixed right position.
+  const rect = anchorEl.getBoundingClientRect();
+  label.style.top   = (rect.top + window.scrollY + rect.height / 2) + 'px';
+  label.style.right = (window.innerWidth - rect.left + 8) + 'px';
+  document.body.appendChild(label);
+  label.addEventListener('animationend', () => label.remove());
 }
 
 /* ── Toggle the gold pill between collapsed (circle) and expanded ── */

@@ -27,6 +27,8 @@ function createRun(party) {
     restAbilitiesUsed: new Set(),
     startTime:        Date.now(),
     floorStartTime:   Date.now(),
+    phaseStartTime:   Date.now(),   // when the current active-travel phase began
+    activeMs:         0,            // cumulative ms of active travel (excludes resting/paused)
     returnStartTime:  0,
     returnDuration:   0,
     encounterActive:  false,
@@ -135,10 +137,16 @@ function _enterRestRoom(run) {
   if (run.phase !== 'traveling') return;
   run.phase = 'resting';
 
-  // Lock the return duration NOW (33% of active dungeon time) so waiting on this
-  // overlay never inflates it — reused by _doReturnFromRest and the overlay display.
-  const elapsedMs = Date.now() - run.startTime;
-  run.returnDuration = Math.max(30_000, Math.round(elapsedMs * 0.33));
+  // Freeze the active-travel clock: add this floor's travel time to the cumulative total.
+  // This excludes time spent waiting on rest/pause overlays, giving an accurate return estimate.
+  if (run.phaseStartTime) {
+    run.activeMs += Date.now() - run.phaseStartTime;
+    run.phaseStartTime = 0;
+  }
+
+  // Lock the return duration NOW (33% of cumulative active travel time) so waiting on this
+  // overlay never inflates it — reused by returnFromRest and the overlay display.
+  run.returnDuration = Math.max(20_000, Math.round(run.activeMs * 0.33));
 
   // Partial HP recovery at rest
   const recovered = [];
@@ -198,6 +206,7 @@ function resumePausedRun(runId) {
   if (!run || !run.paused) return;
   document.getElementById('pause-overlay')?.classList.add('hidden');
   run.paused = false;
+  run.phaseStartTime = Date.now();   // restart active-travel clock after pause
   _pushTimer(run, () => _runEncounterLoop(run), 3000 + Math.random() * 2000);
   addLog(`▶ [${_partyLabel(run)}] Expedition resumed on Floor ${run.floor}.`, 'dungeon');
   updateAdventureUI(run);
@@ -450,6 +459,7 @@ function descendFloor(runId) {
   run.roomIdx         = 0;
   run.encRoomsCleared = 0;
   run.floorStartTime  = Date.now();
+  run.phaseStartTime  = Date.now();   // restart active-travel clock for the new floor
   run.phase           = 'traveling';
 
   addLog(`⬇️ [${_partyLabel(run)}] Descending to Floor ${run.floor}!`, 'dungeon');
